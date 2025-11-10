@@ -35,6 +35,30 @@ jobs:
           echo "${{ secrets.DOT_ENV }}" > .env
           echo "✅ .env file created"
 
+      # Docker Compose로 MySQL & Redis 시작
+      - name: Start MySQL and Redis
+        run: |
+          docker-compose up -d
+          echo "⏳ Waiting for services to be ready..."
+          sleep 10
+
+      # 서비스 헬스체크
+      - name: Wait for MySQL
+        run: |
+          until docker exec chwimeet-mysql mysqladmin ping -h localhost -uroot -proot123414 --silent; do
+            echo "Waiting for MySQL..."
+            sleep 2
+          done
+          echo "✅ MySQL is ready"
+
+      - name: Wait for Redis
+        run: |
+          until docker exec chwimeet-redis redis-cli -a root123414 ping | grep -q PONG; do
+            echo "Waiting for Redis..."
+            sleep 2
+          done
+          echo "✅ Redis is ready"
+
       # gradle wrapper 보안 검증
       - name: Validate Gradle Wrapper
         uses: gradle/wrapper-validation-action@v2

@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: chwimeet-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${SPRING__DATASOURCE__PASSWORD}
+      MYSQL_DATABASE: chwimeet
+      TZ: Asia/Seoul
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+09:00
+    networks:
+      - chwimeet-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${SPRING__DATASOURCE__PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: chwimeet-redis
+    command: redis-server --requirepass ${SPRING__REDIS__PASSWORD}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - chwimeet-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${SPRING__REDIS__PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mysql-data:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  chwimeet-network:
+    driver: bridge
