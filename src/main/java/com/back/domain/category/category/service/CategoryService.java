@@ -31,6 +31,12 @@ public class CategoryService {
                 () -> new ServiceException("404-1", "parentId에 해당하는 카테고리가 없습니다.")
         );
 
+        // Depth 검사: Depth 2까지만 허용
+        // Depth 허용이 깊어지면 Depth 컬럼 추가하여 관리 필요
+        if (parentCategory.getParent() != null) {
+            throw new ServiceException("400-1", "카테고리는 Depth 2까지만 생성할 수 있습니다.");
+        }
+
         Category category = Category.builder()
                 .parent(parentCategory)
                 .name(categoryName)
