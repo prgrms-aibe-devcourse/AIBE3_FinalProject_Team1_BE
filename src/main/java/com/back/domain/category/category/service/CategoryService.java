@@ -11,6 +11,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -73,5 +75,13 @@ public class CategoryService {
         } catch (DataIntegrityViolationException e) { // DB FK 제약 조건 위반 시 발생에러, 데이터 베이스에 FK 설정 필요 (Post 테이블)
             throw new ServiceException("400-1", "%d번 카테고리를 참조 중인 게시글이 있습니다.".formatted(categoryId));
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<CategoryResBody> getCategories() {
+        List<Category> categoryList = categoryRepository.findAllWithChildren();
+        return categoryList.stream()
+                .map(CategoryResBody::of)
+                .toList();
     }
 }
