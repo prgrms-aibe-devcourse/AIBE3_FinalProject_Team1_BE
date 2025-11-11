@@ -100,7 +100,7 @@ class PostControllerTest {
     }
 
     @Test
-    @DisplayName("게시글 목록 조회 - 페이징 처리")
+    @DisplayName("게시글 목록 조회 - 페이징 처리 성공")
     void getPostList_paging_success() throws Exception {
         // given
         Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "createdAt"));
