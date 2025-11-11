@@ -38,7 +38,7 @@ public class ReservationController {
         return RsData.success("%d번 예약이 생성되었습니다.".formatted(reservation.getId()));
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     @GetMapping("/sent")
     public RsData<PagePayload<ReservationSummaryDto>> getSentReservations(
             @AuthenticationPrincipal SecurityUser securityUser,
