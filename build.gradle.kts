@@ -30,14 +30,11 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-security")
-    testImplementation("org.springframework.security:spring-security-test")
     compileOnly("org.projectlombok:lombok")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     annotationProcessor("org.projectlombok:lombok")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
     runtimeOnly("com.h2database:h2")
     runtimeOnly("com.mysql:mysql-connector-j")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     // JWT
     implementation("io.jsonwebtoken:jjwt-api:0.12.6")
@@ -48,6 +45,12 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
     // spring doc
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9")
+    // QueryDSL
+    implementation("com.querydsl:querydsl-jpa:5.0.0:jakarta")
+    // Testing (테스트)
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.security:spring-security-test")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 tasks.withType<Test> {

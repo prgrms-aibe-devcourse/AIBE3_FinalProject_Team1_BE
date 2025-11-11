@@ -47,7 +47,11 @@ public class MemberService {
 
     public void checkPassword(Member member, String password) {
         if (!passwordEncoder.matches(password, member.getPassword())) {
-            throw new ServiceException("401-1", "비밀번호가 일치 하지 않습니다.");
+            throw new ServiceException("401-2", "비밀번호가 올바르지 않습니다.");
         }
+    }
+
+    public long count() {
+        return memberRepository.count();
     }
 }

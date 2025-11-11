@@ -49,6 +49,10 @@ public class ReservationService {
         return reservationRepository.save(reservation);
     }
 
+    public long count() {
+        return reservationRepository.count();
+    }
+
     // 기간 중복 체크
 //    private void validateNoOverlappingReservation(
 //            Long postId,

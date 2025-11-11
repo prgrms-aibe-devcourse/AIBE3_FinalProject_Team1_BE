@@ -3,7 +3,7 @@ package com.back.standard.util.json;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class JsonUt {
-    public static ObjectMapper objectMapper = new ObjectMapper();
+    public static ObjectMapper objectMapper;
 
     public static String toString(Object object) {
         return toString(object, null);
