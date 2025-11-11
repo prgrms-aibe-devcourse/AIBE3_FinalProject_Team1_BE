@@ -1,6 +1,8 @@
 package com.back.domain.member.member.controller;
 
+import com.back.domain.member.member.dto.MemberJoinReqBody;
 import com.back.domain.member.member.service.MemberService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -24,6 +26,23 @@ class MemberControllerTest {
 
     @Autowired
     private MemberService memberService;
+
+    @BeforeEach
+    void setUp() {
+        if (memberService.findByEmail("test@example.com").isPresent()) return;
+
+        MemberJoinReqBody joinReqBody = new MemberJoinReqBody(
+                "test@example.com",
+                "password123",
+                "John Doe",
+                "123 Main St",
+                "Apt 4B",
+                "TestUser",
+                "123-456-7890"
+        );
+
+        memberService.join(joinReqBody);
+    }
 
     @Test
     void testLogin_SuccessfulLogin() throws Exception {

@@ -1,7 +1,6 @@
 package com.back.domain.report.report.controller;
 
 import com.back.ControllerTestSupport;
-import com.back.WithSecurityUser;
 import com.back.domain.report.report.common.ReportType;
 import com.back.domain.report.report.dto.ReportReqBody;
 import com.back.domain.report.report.dto.ReportResBody;
@@ -18,9 +17,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.handler;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class ReportControllerTest extends ControllerTestSupport {
 
@@ -32,7 +29,6 @@ class ReportControllerTest extends ControllerTestSupport {
     }
 
     @Test
-    @WithSecurityUser
     @DisplayName("신고를 등록하면 등록된 신고 정보를 반환한다.")
     void postReport() throws Exception {
         //given

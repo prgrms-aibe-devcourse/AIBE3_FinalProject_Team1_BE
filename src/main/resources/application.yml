@@ -38,6 +38,8 @@ logging:
     org.springframework.transaction.interceptor: TRACE
     com.back: DEBUG
 custom:
+  cors:
+    allowed-origins: ${CUSTOM_CORS_ALLOWED_ORIGINS}
   jwt:
     secretKey: ${CUSTOM__JWT__SECRETKEY}
   accessToken:
