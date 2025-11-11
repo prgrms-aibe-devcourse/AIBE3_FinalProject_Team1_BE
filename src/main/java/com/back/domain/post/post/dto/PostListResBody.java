@@ -24,7 +24,7 @@ public record PostListResBody(
         Boolean isBanned
 
         //TODO: 추후 추가 필드 있을 수 있음
-        //게시글 후기 평균 평점
-        //게시글 후기 개수
+        //TODO: 후기 평균 평점 + 갯수
+
 ) {
 }
