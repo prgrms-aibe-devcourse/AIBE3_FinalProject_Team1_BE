@@ -12,5 +12,5 @@ public class ServiceException extends RuntimeException {
         this.message = message;
     }
 
-    public RsData<Void> getRsData() { return RsData.fail(message);}
+    public RsData<Void> getRsData() { return new RsData<>(resultCode, message);}
 }

@@ -5,7 +5,7 @@ import com.back.domain.member.member.entity.Member;
 import java.time.LocalDateTime;
 
 public record MemberDto(
-        long id,
+        Long id,
         String email,
         String name,
         String nickname,
