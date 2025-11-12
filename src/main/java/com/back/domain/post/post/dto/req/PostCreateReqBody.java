@@ -1,4 +1,4 @@
-package com.back.domain.post.post.dto;
+package com.back.domain.post.post.dto.req;
 
 import com.back.domain.post.post.common.ReceiveMethod;
 import com.back.domain.post.post.common.ReturnMethod;

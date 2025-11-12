@@ -1,5 +1,6 @@
 package com.back.domain.post.post.entity;
 
+import com.back.domain.region.region.entity.Region;
 import com.back.global.jpa.entity.BaseEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -21,8 +22,7 @@ public class PostRegion extends BaseEntity {
     @JoinColumn(name = "post_id", nullable = false)
     private Post post;
 
-//    추후 Region 엔티티 생성 시 주석 해제
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "region_id", nullable = false)
-//    private Region region;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "region_id", nullable = false)
+    private Region region;
 }

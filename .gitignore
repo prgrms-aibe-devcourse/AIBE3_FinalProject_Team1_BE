@@ -41,4 +41,6 @@ db_dev.mv.db
 db_dev.trace.db
 
 .env
-src/main/generated
+
+# QueryDSL generated
+/src/main/generated/

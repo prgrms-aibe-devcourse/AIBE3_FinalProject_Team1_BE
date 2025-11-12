@@ -1,5 +1,6 @@
 package com.back.domain.post.post.entity;
 
+import com.back.domain.category.category.entity.Category;
 import com.back.domain.member.member.entity.Member;
 import com.back.domain.post.post.common.ReceiveMethod;
 import com.back.domain.post.post.common.ReturnMethod;
@@ -57,10 +58,10 @@ public class Post extends BaseEntity {
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PostRegion> postRegions = new ArrayList<>();
 
-//     카테고리 추가 예정
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "category_id", nullable = false)
-//    private Category category;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = false)
+    private Category category;
 
 
 
