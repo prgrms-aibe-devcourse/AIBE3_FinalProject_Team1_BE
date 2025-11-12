@@ -1,7 +1,7 @@
 package com.back.domain.review.review.service;
 
-import com.back.domain.reservation.reservation.entity.Reservation;
-import com.back.domain.reservation.reservation.service.ReservationService;
+import com.back.domain.reservation.entity.Reservation;
+import com.back.domain.reservation.service.ReservationService;
 import com.back.domain.review.review.dto.ReviewDto;
 import com.back.domain.review.review.dto.ReviewWriteReqBody;
 import com.back.domain.review.review.entity.Review;

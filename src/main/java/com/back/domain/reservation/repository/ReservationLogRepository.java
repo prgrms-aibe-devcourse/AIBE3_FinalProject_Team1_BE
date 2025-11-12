@@ -1,7 +1,7 @@
-package com.back.domain.reservation.reservation.repository;
+package com.back.domain.reservation.repository;
 
-import com.back.domain.reservation.reservation.entity.Reservation;
-import com.back.domain.reservation.reservation.entity.ReservationLog;
+import com.back.domain.reservation.entity.Reservation;
+import com.back.domain.reservation.entity.ReservationLog;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

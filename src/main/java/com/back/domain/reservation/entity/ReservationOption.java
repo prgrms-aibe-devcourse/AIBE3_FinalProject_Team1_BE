@@ -1,4 +1,4 @@
-package com.back.domain.reservation.reservation.entity;
+package com.back.domain.reservation.entity;
 
 import com.back.domain.post.post.entity.PostOption;
 import com.back.global.jpa.entity.BaseEntity;

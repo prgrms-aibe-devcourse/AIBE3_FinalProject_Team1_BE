@@ -1,6 +1,6 @@
-package com.back.domain.reservation.reservation.entity;
+package com.back.domain.reservation.entity;
 
-import com.back.domain.reservation.reservation.common.ReservationStatus;
+import com.back.domain.reservation.common.ReservationStatus;
 import com.back.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;

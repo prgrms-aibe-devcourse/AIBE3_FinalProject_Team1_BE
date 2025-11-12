@@ -54,6 +54,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET,"/api/v1/posts", "/api/v1/posts/**").permitAll()
                         .requestMatchers(HttpMethod.GET,"/api/v1/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET,"/api/v1/regions/**").permitAll()
+                        .requestMatchers("/api/v1/reservations/**").authenticated() // 로그인 한 사용자만 예약 기능 접근 가능
                         .requestMatchers("/api/v1/adm/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )

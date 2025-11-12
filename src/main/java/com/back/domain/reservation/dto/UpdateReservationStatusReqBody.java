@@ -1,6 +1,6 @@
-package com.back.domain.reservation.reservation.dto;
+package com.back.domain.reservation.dto;
 
-import com.back.domain.reservation.reservation.common.ReservationStatus;
+import com.back.domain.reservation.common.ReservationStatus;
 import jakarta.validation.constraints.NotNull;
 
 public record UpdateReservationStatusReqBody(
