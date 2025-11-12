@@ -60,26 +60,22 @@ public class ReservationService {
         List<PostOption> selectedOptions = getOptionsByIds(post.getId(), reqBody.optionIds());
 
         // Reservation 엔티티 빌드
-        Reservation reservation = Reservation.builder()
-                .status(ReservationStatus.PENDING_APPROVAL)
-                .receiveMethod(reqBody.receiveMethod())
-                .receiveAddress1(reqBody.receiveAddress1())
-                .receiveAddress2(reqBody.receiveAddress2())
-                .returnMethod(reqBody.returnMethod())
-                .reservationStartAt(reqBody.reservationStartAt())
-                .reservationEndAt(reqBody.reservationEndAt())
-                .author(author)
-                .post(post)
-                .build();
+        Reservation reservation = new Reservation(
+                ReservationStatus.PENDING_APPROVAL,
+                reqBody.receiveMethod(),
+                reqBody.receiveAddress1(),
+                reqBody.receiveAddress2(),
+                reqBody.returnMethod(),
+                reqBody.reservationStartAt(),
+                reqBody.reservationEndAt(),
+                author,
+                post
+        );
 
         // reservationOption 리스트 생성 및 설정
         if (!selectedOptions.isEmpty()) {
             List<ReservationOption> reservationOptions = selectedOptions.stream()
-                    .map(postOption -> ReservationOption.builder()
-                            // reservation 필드는 일단 null로 두고, 이후 setter로 설정
-                            .postOption(postOption)
-                            .reservation(reservation)
-                            .build())
+                    .map(postOption -> new ReservationOption(reservation, postOption))
                     .toList();
 
             // Reservation의 리스트 필드에 추가 (addAllOptions 사용)
@@ -455,10 +451,7 @@ public class ReservationService {
         reservationRepository.save(reservation);
 
         // 상태 전환 로그 저장
-        ReservationLog log = ReservationLog.builder()
-                .reservation(reservation)
-                .status(reservation.getStatus())
-                .build();
+        ReservationLog log = new ReservationLog(reservation.getStatus(), reservation);
         reservationLogRepository.save(log);
     }
 

@@ -10,7 +10,6 @@ import lombok.*;
 @ToString
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@Builder
 public class ReservationLog extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
