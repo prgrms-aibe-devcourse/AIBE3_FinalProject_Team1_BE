@@ -21,7 +21,4 @@ public record RsData<T>(
     public static <T> RsData<T> success(String msg) {
         return new RsData<>("200-1", msg, null);
     }
-    public static <T> RsData<T> fail(String msg) {
-        return new RsData<>("400-1", msg, null);
-    }
 }
