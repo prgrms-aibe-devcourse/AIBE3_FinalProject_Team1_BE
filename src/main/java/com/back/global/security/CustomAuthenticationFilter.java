@@ -7,13 +7,13 @@ import com.back.domain.member.member.service.MemberService;
 import com.back.domain.member.member.service.RefreshTokenStore;
 import com.back.global.exception.ServiceException;
 import com.back.global.web.CookieHelper;
-import com.back.global.web.HeaderHelper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -24,23 +24,14 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
 public class CustomAuthenticationFilter extends OncePerRequestFilter {
     private final MemberService memberService;
     private final CookieHelper cookieHelper;
-    private final HeaderHelper headerHelper;
     private final AuthTokenService authTokenService;
     private final RefreshTokenStore refreshTokenStore; // authVersion 조회 등
-
-    private static final Set<String> AUTH_WHITELIST = Set.of(
-            "/api/v1/members/login",
-            "/api/v1/members/logout",
-            "/api/v1/members",
-            "/api/v1/members/check-nickname"
-    );
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -51,27 +42,13 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
 
-            final String uri = request.getRequestURI();
-
-            // API/WS만 보호, 그 외는 패스
-            boolean needsAuth = uri.startsWith("/api/") || uri.startsWith("/ws/");
-            if (!needsAuth) {
-                filterChain.doFilter(request, response);
-                return;
-            }
-
-            // 화이트리스트는 패스
-            if (AUTH_WHITELIST.contains(uri)) {
-                filterChain.doFilter(request, response);
-                return;
-            }
-
             // 1) Access Token 검사 (헤더 → 쿠키)
             String accessToken = resolveAccessToken();
             if (!accessToken.isBlank()) {
                 Map<String, Object> claims = authTokenService.payload(accessToken);
                 if (claims != null) {
-                    setAuthenticationFromClaims(claims); // 내부에서 authVersion 체크 & 권한 세팅
+                    // 내부에서 authVersion 체크 & 권한 세팅
+                    setAuthenticationFromClaims(claims);
                     filterChain.doFilter(request, response);
                     return;
                 }
@@ -83,17 +60,15 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
                 try {
                     // Redis에서 소유자(userId) 확인
                     long userId = authTokenService.findRefreshOwner(refreshPlain);
-
                     // 회전 + 새 AT 발급
                     String newRefresh = authTokenService.rotateRefresh(refreshPlain);
-                    Member owner = memberService.getById(userId);      // 최신 유저(권한/닉네임 등)
+                    // 최신 유저(권한/닉네임 등)
+                    Member owner = memberService.getById(userId);
                     String newAccess = authTokenService.genAccessToken(owner);
 
                     // 쿠키 갱신
                     cookieHelper.setCookie("refreshToken", newRefresh);
-                    headerHelper.setHeader("refreshToken", newRefresh);
                     cookieHelper.setCookie("accessToken", newAccess);
-                    headerHelper.setHeader("accessToken", newAccess);
 
                     // 현재 요청 인증 확정
                     setAuthenticationFromUser(owner);
@@ -107,12 +82,21 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
 
-            // 3) 둘 다 없으면 익명으로 통과(컨트롤러에서 권한에 따라 401/403 처리)
+            // ✅ 3) 토큰이 없으면 익명 인증 설정 (permitAll 경로를 위해)
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                AnonymousAuthenticationToken anonymousAuth = new AnonymousAuthenticationToken(
+                        "anonymous",
+                        "anonymousUser",
+                        List.of(new SimpleGrantedAuthority("ROLE_ANONYMOUS"))
+                );
+                SecurityContextHolder.getContext().setAuthentication(anonymousAuth);
+            }
+
             filterChain.doFilter(request, response);
 
         } catch (ServiceException e) {
             // 서비스 레벨 예외는 상태코드만 세팅하고 종료
-            response.setStatus(e.getRsData().statusCode());
+            response.setStatus(e.getRsData().status());
         }
     }
 

@@ -9,7 +9,6 @@ import com.back.domain.member.member.service.MemberService;
 import com.back.domain.member.member.service.RefreshTokenStore;
 import com.back.global.security.SecurityUser;
 import com.back.global.web.CookieHelper;
-import com.back.global.web.HeaderHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,9 +52,6 @@ class MemberControllerTest {
 
     @MockitoBean
     private CookieHelper cookieHelper;
-
-    @MockitoBean
-    private HeaderHelper headerHelper;
 
     @Autowired
     private MockMvc mockMvc;

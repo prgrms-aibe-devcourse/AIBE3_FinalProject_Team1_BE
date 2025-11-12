@@ -73,7 +73,7 @@ public class GlobalExceptionHandler {
 
         return new ResponseEntity<>(
                 rsData,
-                ResponseEntity.status(rsData.statusCode()).build().getStatusCode()
+                ResponseEntity.status(rsData.status()).build().getStatusCode()
         );
     }
 

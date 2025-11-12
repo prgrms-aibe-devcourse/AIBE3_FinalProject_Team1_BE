@@ -46,22 +46,27 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.authorizeHttpRequests(
+        return http
+                // 접근 권한 설정
+                .authorizeHttpRequests(
                 auth -> auth
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-                        .requestMatchers(HttpMethod.GET,"/api/v1/posts/**").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/api/v1/posts", "/api/v1/posts/**").permitAll()
                         .requestMatchers(HttpMethod.GET,"/api/v1/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET,"/api/v1/regions/**").permitAll()
                         .requestMatchers("/api/v1/adm/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
-                .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
+                // 기본 보안 설정
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable) // csrf 보호기능 비활성화
                 .formLogin(AbstractHttpConfigurer::disable) // 기본 로그인 폼 비활성
                 .logout(AbstractHttpConfigurer::disable) // 로그아웃 기능 비활성화
                 .httpBasic(AbstractHttpConfigurer::disable) // HTTP Basic 인증 비활성화
                 .sessionManagement(AbstractHttpConfigurer::disable) // 세션 관리 비활성화
+                .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
                 .addFilterBefore(customAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                // 인증 실패 시 응답 처리
                 .exceptionHandling(
                         exceptionHandling -> exceptionHandling
                                 .authenticationEntryPoint(
@@ -88,8 +93,7 @@ public class SecurityConfig {
                                             );
                                         }
                                 )
-                );
-        return http.build();
+                ).build();
     }
 
     @Bean

@@ -28,13 +28,13 @@ public record ReservationDto(
         LocalDateTime createdAt,
         LocalDateTime modifiedAt,
         List<OptionDto> option,
-        // List<ReservationLog> logs,
+        List<ReservationLogDto> logs,
         int totalAmount
 ) {
     public ReservationDto(
             Reservation reservation,
             List<OptionDto> optionDtos,
-//            List<ReservationLogDto> logDtos,
+            List<ReservationLogDto> logDtos,
             int calculatedTotalAmount) {
         this(
                 reservation.getId(),
@@ -56,8 +56,7 @@ public record ReservationDto(
                 reservation.getCreatedAt(),
                 reservation.getModifiedAt(),
                 optionDtos,
-                // TODO: logs 필드 매핑
-                // logDtos,
+                logDtos,
                 calculatedTotalAmount
         );
     }

@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.lang.NonNull;
 
 public record RsData<T>(
-        @NonNull String resultCode,
-        @JsonIgnore int statusCode,
+        @JsonIgnore @NonNull String resultCode,
+        @NonNull int status,
         @NonNull String msg,
         @NonNull T data) {
     public RsData(String resultCode, String msg) {

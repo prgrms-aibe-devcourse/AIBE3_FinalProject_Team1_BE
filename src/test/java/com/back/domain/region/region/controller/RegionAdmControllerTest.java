@@ -8,7 +8,6 @@ import com.back.domain.region.region.dto.RegionUpdateReqBody;
 import com.back.domain.region.region.service.RegionService;
 import com.back.global.security.SecurityUser;
 import com.back.global.web.CookieHelper;
-import com.back.global.web.HeaderHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,9 +45,6 @@ class RegionAdmControllerTest {
 
     @MockitoBean
     private CookieHelper cookieHelper;
-
-    @MockitoBean
-    private HeaderHelper headerHelper;
 
     @MockitoBean
     private AuthTokenService authTokenService;

@@ -1,5 +1,6 @@
 package com.back.domain.report.report.common.validator;
 
+import com.back.domain.post.post.repository.PostRepository;
 import com.back.domain.report.report.common.ReportType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,9 +11,15 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class PostReportValidator implements ReportValidator {
 
+    private final PostRepository postRepository;
+
     @Override
     public boolean validateTargetId(ReportType reportType, Long targetId) {
-        //TODO : PostRepository 주입받아 처리
-        return reportType == ReportType.POST;
+        boolean exists = postRepository.existsById(targetId);
+        if (!exists) {
+            log.error("신고 대상(Post) 없음(targetId: {})", targetId);
+        }
+
+        return reportType == ReportType.POST && exists;
     }
 }

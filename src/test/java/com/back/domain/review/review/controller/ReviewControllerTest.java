@@ -11,7 +11,6 @@ import com.back.domain.review.review.entity.Review;
 import com.back.domain.review.review.service.ReviewService;
 import com.back.global.security.SecurityUser;
 import com.back.global.web.CookieHelper;
-import com.back.global.web.HeaderHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,9 +52,6 @@ class ReviewControllerTest {
 
     @MockitoBean
     private CookieHelper cookieHelper;
-
-    @MockitoBean
-    private HeaderHelper headerHelper;
 
     @MockitoBean
     private AuthTokenService authTokenService;
