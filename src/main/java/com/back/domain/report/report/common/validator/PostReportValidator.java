@@ -15,6 +15,11 @@ public class PostReportValidator implements ReportValidator {
 
     @Override
     public boolean validateTargetId(ReportType reportType, Long targetId) {
-        return reportType == ReportType.POST && postRepository.existsById(targetId);
+        boolean exists = postRepository.existsById(targetId);
+        if (!exists) {
+            log.error("신고 대상(Post) 없음(targetId: {})", targetId);
+        }
+
+        return reportType == ReportType.POST && exists;
     }
 }

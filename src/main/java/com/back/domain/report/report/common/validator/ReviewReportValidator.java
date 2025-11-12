@@ -15,6 +15,11 @@ public class ReviewReportValidator implements ReportValidator {
 
     @Override
     public boolean validateTargetId(ReportType reportType, Long targetId) {
-        return reportType == ReportType.REVIEW && reviewRepository.existsById(targetId);
+        boolean exists = reviewRepository.existsById(targetId);
+        if (!exists) {
+            log.error("신고 대상(Review) 없음(targetId: {})", targetId);
+        }
+
+        return reportType == ReportType.REVIEW && exists;
     }
 }
