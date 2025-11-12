@@ -11,6 +11,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -73,5 +75,13 @@ public class RegionService {
         } catch (DataIntegrityViolationException e) { // DB FK 제약 조건 위반 시 발생에러, 데이터 베이스에 FK 설정 필요 (PostRegion 테이블)
             throw new ServiceException("400-1", "%d번 지역을 참조 중인 게시글이 있습니다.".formatted(regionId));
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<RegionResBody> getRegions() {
+        List<Region> regionList = regionRepository.findAllWithChildren();
+        return regionList.stream()
+                .map(RegionResBody::of)
+                .toList();
     }
 }
