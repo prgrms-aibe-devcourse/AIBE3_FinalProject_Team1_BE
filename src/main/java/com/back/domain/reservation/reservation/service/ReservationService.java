@@ -439,7 +439,6 @@ public class ReservationService {
             }
             case CLAIM_COMPLETED -> {
                 // 청구 완료 (청구 진행 -> 청구 완료)
-                validateHostOnly(isHost, "청구 완료 처리");
                 reservation.completeClaim();
             }
             case LOST_OR_UNRETURNED -> {
