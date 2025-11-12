@@ -7,6 +7,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import lombok.AccessLevel;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -20,7 +21,11 @@ public class PostRegion extends BaseEntity {
     private Post post;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "region_id", nullable = false)
+    @JoinColumn(
+            name = "region_id",
+            nullable = false,
+            foreignKey = @ForeignKey(name = "fk_postregion_region")
+    )
     private Region region;
 
     public PostRegion(Post post, Region region) {
