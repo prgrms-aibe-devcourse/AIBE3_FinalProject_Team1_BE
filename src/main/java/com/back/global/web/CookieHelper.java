@@ -4,6 +4,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
@@ -29,22 +30,26 @@ public class CookieHelper {
         String host = req.getServerName();
         boolean isLocal = "localhost".equalsIgnoreCase(host) || "127.0.0.1".equals(host);
 
-        String domain = System.getenv("COOKIE_DOMAIN"); // 로컬이면 비워두기
+        String domain = System.getenv("COOKIE_DOMAIN");
         boolean secure = Boolean.parseBoolean(System.getenv().getOrDefault("COOKIE_SECURE",
                 isLocal ? "false" : "true"));
+        boolean crossSite = Boolean.parseBoolean(System.getenv().getOrDefault("COOKIE_CROSS_SITE",
+                isLocal ? "false" : "true"));
 
-        Cookie cookie = new Cookie(name, delete ? "" : value);
-        cookie.setPath("/");
-        cookie.setHttpOnly(true);
-        cookie.setSecure(secure);
-        cookie.setMaxAge(delete ? 0 : 60 * 60 * 24 * 365);
+        ResponseCookie.ResponseCookieBuilder builder = ResponseCookie
+                .from(name, delete ? "" : value)
+                .path("/")
+                .maxAge(delete ? 0 : 60 * 60 * 24 * 365)
+                .httpOnly(true)
+                .secure(secure)
+                .sameSite(crossSite ? "None" : "Lax");
 
-        // 로컬에서는 domain 지정하지 말기 (HostOnly 쿠키)
         if (!isLocal && domain != null && !domain.isBlank()) {
-            cookie.setDomain(domain.startsWith(".") ? domain : domain);
+            builder.domain(domain);
         }
 
-        resp.addCookie(cookie);
+        ResponseCookie cookie = builder.build();
+        resp.addHeader("Set-Cookie", cookie.toString());
     }
 
     public void deleteCookie(String name) {

@@ -10,7 +10,6 @@ import com.back.domain.member.member.service.RefreshTokenStore;
 import com.back.global.exception.ServiceException;
 import com.back.global.security.SecurityUser;
 import com.back.global.web.CookieHelper;
-import com.back.global.web.HeaderHelper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +24,6 @@ public class MemberController {
     private final AuthTokenService authTokenService;
     private final RefreshTokenStore refreshTokenStore;
     private final CookieHelper cookieHelper;
-    private final HeaderHelper headerHelper;
 
     @PostMapping
     public ResponseEntity<String> join(
@@ -49,9 +47,7 @@ public class MemberController {
         String refreshToken = authTokenService.issueRefresh(member);
 
         cookieHelper.setCookie("accessToken", accessToken);
-        headerHelper.setHeader("accessToken", accessToken);
         cookieHelper.setCookie("refreshToken", refreshToken);
-        headerHelper.setHeader("refreshToken", refreshToken);
 
         return ResponseEntity.ok(new MemberDto(member));
     }

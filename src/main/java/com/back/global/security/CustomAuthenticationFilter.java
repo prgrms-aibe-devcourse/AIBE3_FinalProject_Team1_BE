@@ -7,7 +7,6 @@ import com.back.domain.member.member.service.MemberService;
 import com.back.domain.member.member.service.RefreshTokenStore;
 import com.back.global.exception.ServiceException;
 import com.back.global.web.CookieHelper;
-import com.back.global.web.HeaderHelper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,7 +30,6 @@ import java.util.Set;
 public class CustomAuthenticationFilter extends OncePerRequestFilter {
     private final MemberService memberService;
     private final CookieHelper cookieHelper;
-    private final HeaderHelper headerHelper;
     private final AuthTokenService authTokenService;
     private final RefreshTokenStore refreshTokenStore; // authVersion 조회 등
 
@@ -91,9 +89,7 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
 
                     // 쿠키 갱신
                     cookieHelper.setCookie("refreshToken", newRefresh);
-                    headerHelper.setHeader("refreshToken", newRefresh);
                     cookieHelper.setCookie("accessToken", newAccess);
-                    headerHelper.setHeader("accessToken", newAccess);
 
                     // 현재 요청 인증 확정
                     setAuthenticationFromUser(owner);
