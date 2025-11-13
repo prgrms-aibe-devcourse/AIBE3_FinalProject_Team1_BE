@@ -1,6 +1,6 @@
-package com.back.domain.report.report.common.validator;
+package com.back.domain.report.common.validator;
 
-import com.back.domain.report.report.common.ReportType;
+import com.back.domain.report.common.ReportType;
 import com.back.domain.review.review.repository.ReviewRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

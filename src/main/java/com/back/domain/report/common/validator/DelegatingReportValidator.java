@@ -1,6 +1,6 @@
-package com.back.domain.report.report.common.validator;
+package com.back.domain.report.common.validator;
 
-import com.back.domain.report.report.common.ReportType;
+import com.back.domain.report.common.ReportType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
