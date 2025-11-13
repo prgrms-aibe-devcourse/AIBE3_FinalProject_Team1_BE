@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.PathVariable;
 
 @Tag(name = "Notification API", description = "알림 API, 인증 정보 필요")
 public interface NotificationApi {
@@ -16,4 +17,10 @@ public interface NotificationApi {
 
     @Operation(summary = "알림 모두 읽음 처리 API", description = "알림 모두 읽음 처리")
     ResponseEntity<RsData<Void>> updateAllToRead(@AuthenticationPrincipal SecurityUser securityUser);
+
+    @Operation(summary = "단일 알림 읽음 처리 API", description = "id에 해당하는 알림 읽음 처리")
+    ResponseEntity<RsData<Void>> updateToRead(
+            @AuthenticationPrincipal SecurityUser securityUser,
+            @PathVariable("id") Long notificationId
+    );
 }

@@ -8,10 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -31,6 +28,16 @@ public class NotificationController implements NotificationApi {
     public ResponseEntity<RsData<Void>> updateAllToRead(@AuthenticationPrincipal SecurityUser securityUser) {
         notificationService.updateAllToRead(securityUser.getId());
         RsData<Void> response = new RsData<>(HttpStatus.OK, "모든 알림 읽음 처리 성공");
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{id}")
+    public ResponseEntity<RsData<Void>> updateToRead(
+            @AuthenticationPrincipal SecurityUser securityUser,
+            @PathVariable("id") Long notificationId
+    ) {
+        notificationService.updateToRead(securityUser.getId(), notificationId);
+        RsData<Void> response = new RsData<>(HttpStatus.OK, "%d번 알림 읽음 처리 성공".formatted(notificationId));
         return ResponseEntity.ok(response);
     }
 }
