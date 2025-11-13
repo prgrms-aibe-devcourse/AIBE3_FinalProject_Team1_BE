@@ -13,4 +13,7 @@ public interface NotificationApi {
 
     @Operation(summary = "읽지 않은 알림 여부 조회 API", description = "읽지 않은 알림 여부 응답")
     ResponseEntity<RsData<NotificationUnreadResBody>> hasUnread(@AuthenticationPrincipal SecurityUser securityUser);
+
+    @Operation(summary = "알림 모두 읽음 처리 API", description = "알림 모두 읽음 처리")
+    ResponseEntity<RsData<Void>> updateAllToRead(@AuthenticationPrincipal SecurityUser securityUser);
 }
