@@ -5,6 +5,9 @@ import com.back.domain.chat.dto.ChatRoomDto;
 import com.back.domain.chat.dto.OtherMemberDto;
 import com.back.domain.chat.entity.ChatRoom;
 import com.back.domain.chat.entity.QChatMember;
+import com.back.domain.chat.entity.QChatRoom;
+import com.back.domain.member.entity.QMember;
+import com.back.domain.post.entity.QPost;
 import com.back.global.queryDsl.CustomQuerydslRepositorySupport;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
@@ -88,5 +91,20 @@ public class ChatQueryRepository extends CustomQuerydslRepositorySupport {
         }
         return post.title.containsIgnoreCase(keyword)
                 .or(member.nickname.containsIgnoreCase(keyword));
+    }
+
+    public Optional<ChatRoom> getChatRoom(Long chatRoomId) {
+        QChatRoom qChatRoom = QChatRoom.chatRoom;
+        QChatMember qChatMember = QChatMember.chatMember;
+
+        ChatRoom chatRoom = selectFrom(qChatRoom)
+                .join(qChatRoom.post, QPost.post).fetchJoin()
+                .join(qChatRoom.chatMembers, qChatMember).fetchJoin()
+                .join(qChatMember.member, QMember.member).fetchJoin()
+                .where(qChatRoom.id.eq(chatRoomId))
+                .distinct()
+                .fetchOne();
+
+        return Optional.ofNullable(chatRoom);
     }
 }

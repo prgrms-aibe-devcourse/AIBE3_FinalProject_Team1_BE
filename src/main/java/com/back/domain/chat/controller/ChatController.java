@@ -40,4 +40,13 @@ public class ChatController implements ChatApi{
         PagePayload<ChatRoomDto> myChatRooms = chatService.getMyChatRooms(securityUser.getId(), pageable, keyword);
         return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "내 채팅방 목록",  myChatRooms));
     }
+
+    @GetMapping("/{chatRoomId}")
+    public ResponseEntity<RsData<ChatRoomDto>> getChatRoom(
+            @PathVariable Long chatRoomId,
+            @AuthenticationPrincipal SecurityUser securityUser
+    ) {
+        ChatRoomDto chatRoom = chatService.getChatRoom(chatRoomId, securityUser.getId());
+        return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "채팅방 정보", chatRoom));
+    }
 }

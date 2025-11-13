@@ -1,7 +1,10 @@
 package com.back.domain.chat.service;
 
+import com.back.domain.chat.dto.ChatPostDto;
 import com.back.domain.chat.dto.ChatRoomDto;
 import com.back.domain.chat.dto.CreateChatRoomResBody;
+import com.back.domain.chat.dto.OtherMemberDto;
+import com.back.domain.chat.entity.ChatMember;
 import com.back.domain.chat.entity.ChatRoom;
 import com.back.domain.chat.repository.ChatQueryRepository;
 import com.back.domain.chat.repository.ChatRoomRepository;
@@ -32,7 +35,6 @@ public class ChatService {
 
     @Transactional
     public CreateChatRoomResBody createOrGetChatRoom(Long postId, Long memberId) {
-
         Post post = postRepository.findById(postId).orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, "존재하지 않는 게시글입니다."));
         Member host = post.getAuthor();
 
@@ -58,5 +60,45 @@ public class ChatService {
         Page<ChatRoomDto> chatRooms = chatQueryRepository.getMyChatRooms(memberId, pageable, keyword);
 
         return PageUt.of(chatRooms);
+    }
+
+    public ChatRoomDto getChatRoom(Long chatRoomId, long memberId) {
+        ChatRoom chatRoom = chatQueryRepository.getChatRoom(chatRoomId)
+                .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, "존재하지 않는 채팅방입니다."));
+
+        Member otherMember = getMember(memberId, chatRoom);
+
+        Post post = chatRoom.getPost();
+        ChatPostDto chatPostDto = new ChatPostDto(post.getTitle());
+        OtherMemberDto otherMemberDto = new OtherMemberDto(
+                otherMember.getId(),
+                otherMember.getNickname(),
+                otherMember.getProfileImgUrl()
+        );
+
+        return new ChatRoomDto(chatRoom.getId(), chatRoom.getCreatedAt(), chatPostDto, otherMemberDto);
+    }
+
+    private Member getMember(long memberId, ChatRoom chatRoom) {
+        Member currentMember = null;
+        Member otherMember = null;
+
+        for (ChatMember chatMember : chatRoom.getChatMembers()) {
+            Member member = chatMember.getMember();
+            if (member.getId() == memberId) {
+                currentMember = member;
+            } else {
+                otherMember = member;
+            }
+        }
+
+        if (currentMember == null) {
+            throw new ServiceException(HttpStatus.FORBIDDEN, "해당 채팅방에 접근할 수 없습니다.");
+        }
+
+        if (otherMember == null) {
+            throw new ServiceException(HttpStatus.NOT_FOUND, "채팅 상대 정보가 없습니다.");
+        }
+        return otherMember;
     }
 }

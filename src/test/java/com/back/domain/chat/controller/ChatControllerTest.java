@@ -366,4 +366,85 @@ class ChatControllerTest {
                 .andExpect(jsonPath("$.data.page.last").value(true))
                 .andExpect(jsonPath("$.data.page.hasNext").value(false));
     }
+
+    @Test
+    @WithUserDetails(value = "user1@test.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @DisplayName("채팅방 상세 정보 조회 성공")
+    void test10_getChatRoom_success() throws Exception {
+        // given - member1과 member2의 채팅방
+        Long chatRoomId = chatService.createOrGetChatRoom(post1.getId(), member1.getId()).chatRoomId();
+
+        // when
+        ResultActions resultActions = mvc.perform(get("/api/v1/chats/{chatRoomId}", chatRoomId))
+                .andDo(print());
+
+        // then
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.msg").value("채팅방 정보"))
+                .andExpect(jsonPath("$.data.id").value(chatRoomId))
+                .andExpect(jsonPath("$.data.createdAt").exists())
+                .andExpect(jsonPath("$.data.post.title").value("캠핑 텐트 대여"))
+                .andExpect(jsonPath("$.data.otherMember.id").value(member2.getId()))
+                .andExpect(jsonPath("$.data.otherMember.nickname").value("kim"));
+    }
+
+    @Test
+    @WithUserDetails(value = "user1@test.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @DisplayName("존재하지 않는 채팅방 조회 시도")
+    void test11_getChatRoom_notFound() throws Exception {
+        // given
+        Long nonExistentChatRoomId = 99999L;
+
+        // when
+        ResultActions resultActions = mvc.perform(get("/api/v1/chats/{chatRoomId}", nonExistentChatRoomId))
+                .andDo(print());
+
+        // then
+        resultActions
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.msg").value("존재하지 않는 채팅방입니다."));
+    }
+
+    @Test
+    @WithUserDetails(value = "user2@test.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @DisplayName("권한 없는 채팅방 조회 시도 - member2가 member1-member3 채팅방 접근")
+    void test12_getChatRoom_forbidden() throws Exception {
+        // given
+        Long chatRoomId = chatService.createOrGetChatRoom(post2.getId(), member1.getId()).chatRoomId();
+
+        // when
+        ResultActions resultActions = mvc.perform(get("/api/v1/chats/{chatRoomId}", chatRoomId))
+                .andDo(print());
+
+        // then
+        resultActions
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.msg").value("해당 채팅방에 접근할 수 없습니다."));
+    }
+
+    @Test
+    @WithUserDetails(value = "user2@test.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @DisplayName("채팅방 상세 조회 - 상대방 관점에서 확인")
+    void test13_getChatRoom_fromOtherMemberPerspective() throws Exception {
+        // given
+        Long chatRoomId = chatService.createOrGetChatRoom(post1.getId(), member1.getId()).chatRoomId();
+
+        // when
+        ResultActions resultActions = mvc.perform(get("/api/v1/chats/{chatRoomId}", chatRoomId))
+                .andDo(print());
+
+        // then
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.data.id").value(chatRoomId))
+                .andExpect(jsonPath("$.data.post.title").value("캠핑 텐트 대여"))
+                .andExpect(jsonPath("$.data.otherMember.id").value(member1.getId()))
+                .andExpect(jsonPath("$.data.otherMember.nickname").value("hong"));
+    }
+
 }
