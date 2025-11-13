@@ -100,7 +100,13 @@ class MemberControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value(201))
                 .andExpect(jsonPath("$.msg").value("회원가입 되었습니다."))
-                .andExpect(jsonPath("$.data").doesNotExist());  // Void이므로 data 없음
+                .andExpect(jsonPath("$.data").exists())  // ✅ data 존재 확인
+                .andExpect(jsonPath("$.data.email").value("test@example.com"))
+                .andExpect(jsonPath("$.data.name").value("테스트"))
+                .andExpect(jsonPath("$.data.nickname").value("테스트닉네임"))
+                .andExpect(jsonPath("$.data.phoneNumber").value("01012345678"))
+                .andExpect(jsonPath("$.data.address1").value("서울시 강남구"))
+                .andExpect(jsonPath("$.data.address2").value("테헤란로 123"));
 
         verify(memberService).join(any());
     }

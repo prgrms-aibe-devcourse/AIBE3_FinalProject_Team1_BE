@@ -28,12 +28,12 @@ public class MemberController implements MemberApi{
     private final CookieHelper cookieHelper;
 
     @PostMapping
-    public ResponseEntity<RsData<Void>> join(
+    public ResponseEntity<RsData<MemberDto>> join(
             @Valid @RequestBody MemberJoinReqBody reqBody
     ) {
-        memberService.join(reqBody);
+        Member member =memberService.join(reqBody);
 
-        return ResponseEntity.status(201).body(new RsData<>(HttpStatus.CREATED, "회원가입 되었습니다."));
+        return ResponseEntity.status(201).body(new RsData<>(HttpStatus.CREATED, "회원가입 되었습니다.", new MemberDto(member)));
     }
 
     @PostMapping("/login")

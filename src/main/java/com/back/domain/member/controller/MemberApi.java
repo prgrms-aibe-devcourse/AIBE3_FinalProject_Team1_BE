@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 public interface MemberApi {
     @Operation(summary = "회원가입", description = "비밀번호 8자리 이상, 프로필 이미지는 계정 수정에서 추가 가능")
-    ResponseEntity<RsData<Void>> join(
+    ResponseEntity<RsData<MemberDto>> join(
             @Valid @RequestBody MemberJoinReqBody reqBody
     );
     @Operation(summary = "로그인", description = "비밀번호 8자리 이상")
