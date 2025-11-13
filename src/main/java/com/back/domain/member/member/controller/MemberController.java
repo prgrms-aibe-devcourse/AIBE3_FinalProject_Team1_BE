@@ -12,6 +12,7 @@ import com.back.global.security.SecurityUser;
 import com.back.global.web.CookieHelper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -39,7 +40,7 @@ public class MemberController {
             @Valid @RequestBody MemberLoginReqBody reqBody
     ) {
         Member member = memberService.findByEmail(reqBody.email()).orElseThrow(
-                () -> new ServiceException("401-1", "사용자를 찾을 수 없습니다.")
+                () -> new ServiceException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다.")
         );
         memberService.checkPassword(member, reqBody.password());
 

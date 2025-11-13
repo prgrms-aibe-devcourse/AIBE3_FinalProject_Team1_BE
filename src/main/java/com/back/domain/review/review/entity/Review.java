@@ -1,6 +1,6 @@
 package com.back.domain.review.review.entity;
 
-import com.back.domain.reservation.reservation.entity.Reservation;
+import com.back.domain.reservation.entity.Reservation;
 import com.back.global.jpa.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

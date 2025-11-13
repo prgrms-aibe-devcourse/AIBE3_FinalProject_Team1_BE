@@ -1,4 +1,4 @@
-package com.back.domain.reservation.reservation.entity;
+package com.back.domain.reservation.entity;
 
 import com.back.domain.post.entity.PostOption;
 import com.back.global.jpa.entity.BaseEntity;
@@ -11,9 +11,8 @@ import lombok.*;
 @Entity
 @Getter
 @ToString
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@Builder
 public class ReservationOption extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reservation_id", nullable = false)

@@ -1,16 +1,17 @@
 package com.back.global.exception;
 
 import com.back.global.rsData.RsData;
+import org.springframework.http.HttpStatus;
 
 public class ServiceException extends RuntimeException {
-    private final String resultCode;
+    private final HttpStatus status;
     private final String message;
 
-    public ServiceException(String resultCode, String message) {
-        super(resultCode + " : " + message);
-        this.resultCode = resultCode;
+    public ServiceException(HttpStatus status, String message) {
+        super(status + " : " + message);
+        this.status = status;
         this.message = message;
     }
 
-    public RsData<Void> getRsData() { return new RsData<>(resultCode, message);}
+    public RsData<Void> getRsData() { return new RsData<>(status, message);}
 }

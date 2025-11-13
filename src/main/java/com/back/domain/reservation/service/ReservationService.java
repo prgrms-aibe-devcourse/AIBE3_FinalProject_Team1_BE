@@ -1,4 +1,4 @@
-package com.back.domain.reservation.reservation.service;
+package com.back.domain.reservation.service;
 
 import com.back.domain.member.member.entity.Member;
 import com.back.domain.post.common.ReceiveMethod;
@@ -6,20 +6,22 @@ import com.back.domain.post.common.ReturnMethod;
 import com.back.domain.post.entity.Post;
 import com.back.domain.post.entity.PostOption;
 import com.back.domain.post.service.PostService;
-import com.back.domain.reservation.reservation.common.ReservationDeliveryMethod;
-import com.back.domain.reservation.reservation.common.ReservationStatus;
-import com.back.domain.reservation.reservation.dto.*;
-import com.back.domain.reservation.reservation.entity.Reservation;
-import com.back.domain.reservation.reservation.entity.ReservationLog;
-import com.back.domain.reservation.reservation.entity.ReservationOption;
-import com.back.domain.reservation.reservation.repository.ReservationLogRepository;
-import com.back.domain.reservation.reservation.repository.ReservationRepository;
+import com.back.domain.reservation.common.ReservationDeliveryMethod;
+import com.back.domain.reservation.common.ReservationStatus;
+import com.back.domain.reservation.dto.*;
+import com.back.domain.reservation.entity.Reservation;
+import com.back.domain.reservation.entity.ReservationLog;
+import com.back.domain.reservation.entity.ReservationOption;
+import com.back.domain.reservation.repository.ReservationLogRepository;
+import com.back.domain.reservation.repository.ReservationQueryRepository;
+import com.back.domain.reservation.repository.ReservationRepository;
 import com.back.global.exception.ServiceException;
 import com.back.standard.util.page.PagePayload;
 import com.back.standard.util.page.PageUt;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -31,6 +33,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ReservationService {
     private final ReservationRepository reservationRepository;
+    private final ReservationQueryRepository reservationQueryRepository;
     private final ReservationLogRepository reservationLogRepository;
     private final PostService postService;
 
@@ -58,26 +61,22 @@ public class ReservationService {
         List<PostOption> selectedOptions = getOptionsByIds(post.getId(), reqBody.optionIds());
 
         // Reservation 엔티티 빌드
-        Reservation reservation = Reservation.builder()
-                .status(ReservationStatus.PENDING_APPROVAL)
-                .receiveMethod(reqBody.receiveMethod())
-                .receiveAddress1(reqBody.receiveAddress1())
-                .receiveAddress2(reqBody.receiveAddress2())
-                .returnMethod(reqBody.returnMethod())
-                .reservationStartAt(reqBody.reservationStartAt())
-                .reservationEndAt(reqBody.reservationEndAt())
-                .author(author)
-                .post(post)
-                .build();
+        Reservation reservation = new Reservation(
+                ReservationStatus.PENDING_APPROVAL,
+                reqBody.receiveMethod(),
+                reqBody.receiveAddress1(),
+                reqBody.receiveAddress2(),
+                reqBody.returnMethod(),
+                reqBody.reservationStartAt(),
+                reqBody.reservationEndAt(),
+                author,
+                post
+        );
 
         // reservationOption 리스트 생성 및 설정
         if (!selectedOptions.isEmpty()) {
             List<ReservationOption> reservationOptions = selectedOptions.stream()
-                    .map(postOption -> ReservationOption.builder()
-                            // reservation 필드는 일단 null로 두고, 이후 setter로 설정
-                            .postOption(postOption)
-                            .reservation(reservation)
-                            .build())
+                    .map(postOption -> new ReservationOption(reservation, postOption))
                     .toList();
 
             // Reservation의 리스트 필드에 추가 (addAllOptions 사용)
@@ -94,20 +93,20 @@ public class ReservationService {
 
     // 기간 중복 체크
     private void validateNoOverlappingReservation(Long postId, LocalDate start, LocalDate end, Long excludeId) {
-        boolean hasOverlap = (excludeId == null)
-                ? reservationRepository.existsOverlappingReservation(postId, start, end)
-                : reservationRepository.existsOverlappingReservationExcludingSelf(postId, start, end, excludeId);
+        boolean hasOverlap = reservationQueryRepository.existsOverlappingReservation(
+                postId, start, end, excludeId
+        );
 
         if (hasOverlap) {
-            throw new ServiceException("400-1", "해당 기간에 이미 예약이 있습니다.");
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "해당 기간에 이미 예약이 있습니다.");
         }
     }
 
     // 같은 게스트의 중복 예약 체크
     private void validateNoDuplicateReservation(Long postId, Long authorId) {
-        boolean exists = reservationRepository.existsActiveReservationByPostIdAndAuthorId(postId, authorId);
+        boolean exists = reservationQueryRepository.existsActiveReservation(postId, authorId);
         if (exists) {
-            throw new ServiceException("400-2", "이미 해당 게시글에 예약이 존재합니다.");
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "이미 해당 게시글에 예약이 존재합니다.");
         }
     }
 
@@ -115,7 +114,7 @@ public class ReservationService {
         // 수령 방식 (Receive Method) 검증
         if (!isReceiveMethodAllowed(post.getReceiveMethod(), receiveMethod)) {
             throw new ServiceException(
-                    "400-3",
+                    HttpStatus.BAD_REQUEST,
                     "게시글에서 허용하는 수령 방식(%s)이 아닙니다.".formatted(post.getReceiveMethod().getDescription())
             );
         }
@@ -123,7 +122,7 @@ public class ReservationService {
         // 반납 방식 (Return Method) 검증
         if (!isReturnMethodAllowed(post.getReturnMethod(), returnMethod)) {
             throw new ServiceException(
-                    "400-4",
+                    HttpStatus.BAD_REQUEST,
                     "게시글에서 허용하는 반납 방식(%s)이 아닙니다.".formatted(post.getReturnMethod().getDescription())
             );
         }
@@ -159,7 +158,7 @@ public class ReservationService {
 
         // 유효성 검증: 개수 일치 확인
         if (options.size() != optionIds.size()) {
-            throw new ServiceException("400-5", "선택된 옵션 중 유효하지 않은 옵션이 포함되어 있습니다."); // 400-3, 400-4와 충돌되지 않도록 코드 변경
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "선택된 옵션 중 유효하지 않은 옵션이 포함되어 있습니다."); // 400-3, 400-4와 충돌되지 않도록 코드 변경
         }
 
         // 해당 게시글의 옵션인지 검증
@@ -167,7 +166,7 @@ public class ReservationService {
                 .allMatch(option -> option.getPost().getId().equals(postId));
 
         if (!allBelongToPost) {
-            throw new ServiceException("400-6", "선택된 옵션은 해당 게시글의 옵션이 아닙니다."); // 400-3, 400-4와 충돌되지 않도록 코드 변경
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "선택된 옵션은 해당 게시글의 옵션이 아닙니다."); // 400-3, 400-4와 충돌되지 않도록 코드 변경
         }
 
         return options;
@@ -275,7 +274,7 @@ public class ReservationService {
         // postId로 게시글 조회 후, 해당 게시글의 author와 요청한 author가 일치하는지 확인
         Post post = postService.getById(postId);
         if (!post.getAuthor().getId().equals(member.getId())) {
-            throw new ServiceException("403-1", "해당 게시글의 호스트가 아닙니다.");
+            throw new ServiceException(HttpStatus.FORBIDDEN, "해당 게시글의 호스트가 아닙니다.");
         }
 
         Page<Reservation> reservationPage;
@@ -313,12 +312,12 @@ public class ReservationService {
 
     public ReservationDto getReservationDtoById(Long reservationId, Long memberId) {
         Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new ServiceException("404-1", "해당 예약을 찾을 수 없습니다."));
+                .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, "해당 예약을 찾을 수 없습니다."));
 
         // 권한 체크
         if (!reservation.getAuthor().getId().equals(memberId) &&
                 !reservation.getPost().getAuthor().getId().equals(memberId)) {
-            throw new ServiceException("403-1", "해당 예약에 대한 접근 권한이 없습니다.");
+            throw new ServiceException(HttpStatus.FORBIDDEN, "해당 예약에 대한 접근 권한이 없습니다.");
         }
 
         Post post = reservation.getPost();
@@ -350,14 +349,14 @@ public class ReservationService {
 
     public void updateReservationStatus(Long reservationId, Long memberId, UpdateReservationStatusReqBody reqBody) {
         Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new ServiceException("404-1", "해당 예약을 찾을 수 없습니다."));
+                .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, "해당 예약을 찾을 수 없습니다."));
 
         // 권한 체크
         boolean isGuest = reservation.getAuthor().getId().equals(memberId);
         boolean isHost = reservation.getPost().getAuthor().getId().equals(memberId);
 
         if (!isGuest && !isHost) {
-            throw new ServiceException("403-1", "해당 예약의 상태를 변경할 권한이 없습니다.");
+            throw new ServiceException(HttpStatus.FORBIDDEN, "해당 예약의 상태를 변경할 권한이 없습니다.");
         }
 
         // 상태별 처리 및 권한 체크
@@ -448,49 +447,46 @@ public class ReservationService {
                 validateHostOnly(isHost, "미반납/분실 처리");
                 reservation.markAsLost();
             }
-            default -> throw new ServiceException("400-1", "지원하지 않는 상태 전환입니다.");
+            default -> throw new ServiceException(HttpStatus.BAD_REQUEST, "지원하지 않는 상태 전환입니다.");
         }
         reservationRepository.save(reservation);
 
         // 상태 전환 로그 저장
-        ReservationLog log = ReservationLog.builder()
-                .reservation(reservation)
-                .status(reservation.getStatus())
-                .build();
+        ReservationLog log = new ReservationLog(reservation.getStatus(), reservation);
         reservationLogRepository.save(log);
     }
 
     private void validateHostOnly(boolean isHost, String action) {
         if (!isHost) {
-            throw new ServiceException("403-2",
+            throw new ServiceException(HttpStatus.FORBIDDEN,
                     String.format("호스트만 %s을(를) 수행할 수 있습니다.", action));
         }
     }
 
     private void validateGuestOnly(boolean isGuest, String action) {
         if (!isGuest) {
-            throw new ServiceException("403-3",
+            throw new ServiceException(HttpStatus.FORBIDDEN,
                     String.format("게스트만 %s을(를) 수행할 수 있습니다.", action));
         }
     }
 
     public Reservation getById(Long reservationId) {
         return reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new ServiceException("404-1", "해당 예약을 찾을 수 없습니다."));
+                .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, "해당 예약을 찾을 수 없습니다."));
     }
 
     public void updateReservation(Long reservationId, Long memberId, UpdateReservationReqBody reqBody) {
         Reservation reservation = reservationRepository.findByIdWithOptions(reservationId)
-                .orElseThrow(() -> new ServiceException("404-1", "해당 예약을 찾을 수 없습니다."));
+                .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, "해당 예약을 찾을 수 없습니다."));
 
         // 권한 체크: 예약 작성한 게스트만 수정 가능
         if (!reservation.getAuthor().getId().equals(memberId)) {
-            throw new ServiceException("403-1", "해당 예약을 수정할 권한이 없습니다.");
+            throw new ServiceException(HttpStatus.FORBIDDEN, "해당 예약을 수정할 권한이 없습니다.");
         }
 
         // 수정 가능 상태인지 체크
         if (!reservation.isModifiable()) {
-            throw new ServiceException("400-1", "현재 상태에서는 예약을 수정할 수 없습니다.");
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "현재 상태에서는 예약을 수정할 수 없습니다.");
         }
 
         // 배송 정보 유효성 체크
@@ -529,13 +525,13 @@ public class ReservationService {
         if (method == ReservationDeliveryMethod.DELIVERY) {
             // 택배 배송인 경우 주소 필수
             if (address1 == null || address1.isBlank()) {
-                throw new ServiceException("400-20", "택배 배송 시 주소는 필수입니다.");
+                throw new ServiceException(HttpStatus.BAD_REQUEST, "택배 배송 시 주소는 필수입니다.");
             }
         } else if (method == ReservationDeliveryMethod.DIRECT) {
             // 직거래인 경우 주소 불필요
             if ((address1 != null && !address1.isBlank()) ||
                     (address2 != null && !address2.isBlank())) {
-                throw new ServiceException("400-21", "직거래 방식에서는 주소를 입력할 수 없습니다.");
+                throw new ServiceException(HttpStatus.BAD_REQUEST, "직거래 방식에서는 주소를 입력할 수 없습니다.");
             }
         }
     }

@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -125,7 +126,7 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
         long tokenVer = toLong(claims.getOrDefault("authVersion", 1));
         long serverVer = refreshTokenStore.getAuthVersion(id);
         if (serverVer != tokenVer) {
-            throw new ServiceException("401-9", "권한 정보가 변경되었습니다. 재로그인 해주세요.");
+            throw new ServiceException(HttpStatus.UNAUTHORIZED, "권한 정보가 변경되었습니다. 재로그인 해주세요.");
         }
 
         // role 단순화

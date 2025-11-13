@@ -1,4 +1,4 @@
-package com.back.domain.reservation.reservation.dto;
+package com.back.domain.reservation.dto;
 
 public record OptionDto(
         Long optionId,

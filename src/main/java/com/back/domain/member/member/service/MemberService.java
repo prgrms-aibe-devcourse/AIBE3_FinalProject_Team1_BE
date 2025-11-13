@@ -6,6 +6,7 @@ import com.back.domain.member.member.entity.Member;
 import com.back.domain.member.member.repository.MemberRepository;
 import com.back.global.exception.ServiceException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -18,7 +19,7 @@ public class MemberService {
     private final PasswordEncoder passwordEncoder;
 
     public Member getById(long userId) {
-        return memberRepository.findById(userId).orElseThrow(() -> new ServiceException("404-1", "존재하지 않는 회원입니다."));
+        return memberRepository.findById(userId).orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, "존재하지 않는 회원입니다."));
     }
 
     public Optional<Member> findByEmail(String email) {
@@ -47,7 +48,7 @@ public class MemberService {
 
     public void checkPassword(Member member, String password) {
         if (!passwordEncoder.matches(password, member.getPassword())) {
-            throw new ServiceException("401-2", "비밀번호가 올바르지 않습니다.");
+            throw new ServiceException(HttpStatus.NOT_FOUND, "비밀번호가 올바르지 않습니다.");
         }
     }
 

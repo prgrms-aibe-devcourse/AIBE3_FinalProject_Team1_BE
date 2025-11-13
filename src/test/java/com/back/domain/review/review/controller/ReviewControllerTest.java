@@ -3,9 +3,10 @@ package com.back.domain.review.review.controller;
 import com.back.domain.member.member.entity.Member;
 import com.back.domain.member.member.service.AuthTokenService;
 import com.back.domain.member.member.service.RefreshTokenStore;
-import com.back.domain.reservation.reservation.common.ReservationStatus;
-import com.back.domain.reservation.reservation.entity.Reservation;
-import com.back.domain.reservation.reservation.service.ReservationService;
+import com.back.domain.reservation.common.ReservationDeliveryMethod;
+import com.back.domain.reservation.common.ReservationStatus;
+import com.back.domain.reservation.entity.Reservation;
+import com.back.domain.reservation.service.ReservationService;
 import com.back.domain.review.review.dto.ReviewWriteReqBody;
 import com.back.domain.review.review.entity.Review;
 import com.back.domain.review.review.service.ReviewService;
@@ -26,6 +27,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -90,11 +92,18 @@ class ReviewControllerTest {
             .address1("테스트 주소1")
             .address2("테스트 주소2")
             .build();
-        
-        testReservation = Reservation.builder()
-            .author(author)
-            .status(ReservationStatus.RETURN_COMPLETED)
-            .build();
+
+        testReservation = new Reservation(
+                ReservationStatus.RETURN_COMPLETED,
+                ReservationDeliveryMethod.DIRECT,  // 또는 DELIVERY
+                null,  // receiveAddress1
+                null,  // receiveAddress2
+                ReservationDeliveryMethod.DIRECT,  // 또는 DELIVERY
+                LocalDate.now().plusDays(1),  // reservationStartAt
+                LocalDate.now().plusDays(3),  // reservationEndAt
+                author,
+                null  // Post 객체도 필요
+        );
 
         // 테스트용 리뷰 설정
         testReview = Review.builder()

@@ -1,4 +1,4 @@
-package com.back.domain.reservation.reservation.dto;
+package com.back.domain.reservation.dto;
 
 import com.back.domain.member.member.entity.Member;
 

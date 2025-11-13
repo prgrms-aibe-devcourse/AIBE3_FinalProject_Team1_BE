@@ -25,7 +25,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<RsData<Void>> handle(NoSuchElementException e) {
         return new ResponseEntity<>(
                 new RsData<>(
-                        "404-1",
+                        BAD_REQUEST,
                         "존재하지 않는 데이터입니다."
                 ),
                 NOT_FOUND
@@ -46,7 +46,7 @@ public class GlobalExceptionHandler {
 
         return new ResponseEntity<>(
                 new RsData<>(
-                        "400-1",
+                        BAD_REQUEST,
                         message
                 ),
                 BAD_REQUEST
@@ -59,7 +59,7 @@ public class GlobalExceptionHandler {
 
         return new ResponseEntity<>(
                 new RsData<>(
-                        "400-1",
+                        BAD_REQUEST,
                         "잘못된 요청입니다."
                 ),
                 BAD_REQUEST
@@ -83,7 +83,7 @@ public class GlobalExceptionHandler {
 
         return new ResponseEntity<>(
                 new RsData<>(
-                        "400-1",
+                        BAD_REQUEST,
                         "회원정보를 찾을 수 없습니다."
                 ),
                 BAD_REQUEST

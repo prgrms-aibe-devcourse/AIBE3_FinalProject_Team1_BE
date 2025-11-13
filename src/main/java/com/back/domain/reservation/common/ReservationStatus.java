@@ -1,4 +1,4 @@
-package com.back.domain.reservation.reservation.common;
+package com.back.domain.reservation.common;
 
 import lombok.Getter;
 
