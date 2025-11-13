@@ -6,7 +6,6 @@ import com.back.domain.post.entity.Post;
 import com.back.domain.post.entity.PostOption;
 import com.back.domain.reservation.common.ReservationDeliveryMethod;
 import com.back.domain.reservation.common.ReservationStatus;
-import com.back.domain.review.review.entity.Review;
 import com.back.global.exception.ServiceException;
 import com.back.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -56,9 +55,6 @@ public class Reservation extends BaseEntity {
 
     @OneToMany(mappedBy = "reservation", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ReservationOption> reservationOptions = new ArrayList<>();
-
-    @OneToOne(mappedBy = "reservation", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Review review;
 
     public void addAllOptions(List<ReservationOption> reservationOptions) {
         this.reservationOptions.addAll(reservationOptions);

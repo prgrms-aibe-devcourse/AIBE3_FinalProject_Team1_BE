@@ -26,9 +26,9 @@ public class ReviewService {
     @Transactional
     public void writeReview(Long reservationId, ReviewWriteReqBody reqBody, Long authorId) {
         Reservation reservation = reservationService.getById(reservationId);
-        // TODO: 예약 상태에 따라 생성 불가 로직 추가 필요
-        if (reservation.getReview() != null) {
-            throw new ServiceException(HttpStatus.BAD_REQUEST,"이미 작성된 리뷰가 있습니다.");
+        boolean exists = reviewRepository.existsByReservationId(reservationId);
+        if (exists) {
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "이미 작성된 리뷰가 있습니다.");
         }
         if (reservation.getAuthor() == null || reservation.getAuthor().getId() == null) {
             throw new ServiceException(HttpStatus.UNAUTHORIZED, "예약 정보가 올바르지 않습니다.");
