@@ -8,6 +8,7 @@ import com.back.domain.category.category.repository.CategoryRepository;
 import com.back.global.exception.ServiceException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,13 +33,13 @@ public class CategoryService {
 
     private CategoryResBody createCategoryWithParent(Long parentId, String categoryName) {
         Category parentCategory = categoryRepository.findById(parentId).orElseThrow(
-                () -> new ServiceException("404-1", "%d번 카테고리는 존재하지 않습니다.".formatted(parentId))
+                () -> new ServiceException(HttpStatus.NOT_FOUND, "%d번 카테고리는 존재하지 않습니다.".formatted(parentId))
         );
 
         // Depth 검사: Depth 2까지만 허용
         // Depth 허용이 깊어지면 Depth 컬럼 추가하여 관리 필요
         if (parentCategory.getParent() != null) {
-            throw new ServiceException("400-1", "카테고리는 Depth 2까지만 생성할 수 있습니다.");
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "카테고리는 Depth 2까지만 생성할 수 있습니다.");
         }
 
         Category category = Category.builder()
@@ -61,7 +62,7 @@ public class CategoryService {
 
     public CategoryResBody updateCategory(Long categoryId, CategoryUpdateReqBody categoryUpdateReqBody) {
         Category category = categoryRepository.findCategoryWithChildById(categoryId).orElseThrow(
-                () -> new ServiceException("404-1", "%d번 카테고리는 존재하지 않습니다.".formatted(categoryId))
+                () -> new ServiceException(HttpStatus.NOT_FOUND, "%d번 카테고리는 존재하지 않습니다.".formatted(categoryId))
         );
 
         category.setName(categoryUpdateReqBody.name());
@@ -73,7 +74,7 @@ public class CategoryService {
             categoryRepository.deleteById(categoryId);
             categoryRepository.flush();
         } catch (DataIntegrityViolationException e) { // DB FK 제약 조건 위반 시 발생에러, 데이터 베이스에 FK 설정 필요 (Post 테이블)
-            throw new ServiceException("400-1", "%d번 카테고리를 참조 중인 게시글이 있습니다.".formatted(categoryId));
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "%d번 카테고리를 참조 중인 게시글이 있습니다.".formatted(categoryId));
         }
     }
 

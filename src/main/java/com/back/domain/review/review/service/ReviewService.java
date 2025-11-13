@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,13 +28,13 @@ public class ReviewService {
         Reservation reservation = reservationService.getById(reservationId);
         // TODO: 예약 상태에 따라 생성 불가 로직 추가 필요
         if (reservation.getReview() != null) {
-            throw new ServiceException("400-1","이미 작성된 리뷰가 있습니다.");
+            throw new ServiceException(HttpStatus.BAD_REQUEST,"이미 작성된 리뷰가 있습니다.");
         }
         if (reservation.getAuthor() == null || reservation.getAuthor().getId() == null) {
-            throw new ServiceException("500-1", "예약 정보가 올바르지 않습니다.");
+            throw new ServiceException(HttpStatus.UNAUTHORIZED, "예약 정보가 올바르지 않습니다.");
         }
         if (!reservation.getAuthor().getId().equals(authorId)) {
-            throw new ServiceException("403-1", "리뷰를 작성할 권한이 없습니다.");
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "리뷰를 작성할 권한이 없습니다.");
         }
 
         Review review = Review.builder()

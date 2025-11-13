@@ -6,6 +6,7 @@ import com.back.standard.util.json.JsonUt;
 import com.back.standard.util.jwt.JwtUt;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
@@ -61,7 +62,7 @@ public class AuthTokenService {
     /** 회전 */
     public String rotateRefresh(String oldJti) {
         String payload = rtStore.findRefreshPayload(oldJti);
-        if (payload == null) throw new ServiceException("401-1", "유효하지 않은 Token 입니다.");
+        if (payload == null) throw new ServiceException(HttpStatus.UNAUTHORIZED, "유효하지 않은 Token 입니다.");
 
         long userId = ((Number) JsonUt.parse(payload, Map.class).get("userId")).longValue();
         // old 삭제
@@ -77,7 +78,7 @@ public class AuthTokenService {
 
     public long findRefreshOwner(String jti) {
         String payload = rtStore.findRefreshPayload(jti);
-        if (payload == null) throw new ServiceException("401-1", "유효하지 않은 Token 입니다.");
+        if (payload == null) throw new ServiceException(HttpStatus.UNAUTHORIZED, "유효하지 않은 Token 입니다.");
         return ((Number) JsonUt.parse(payload, Map.class).get("userId")).longValue();
     }
 

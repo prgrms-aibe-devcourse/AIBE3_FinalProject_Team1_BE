@@ -10,6 +10,7 @@ import com.back.global.exception.ServiceException;
 import com.back.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -82,7 +83,7 @@ public class Reservation extends BaseEntity {
     // 여러 단계에서 -> 예약 취소
     public void cancel(String reason) {
         if (!canCancel()) {
-            throw new ServiceException("400-10", "현재 상태에서는 취소할 수 없습니다.");
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "현재 상태에서는 취소할 수 없습니다.");
         }
         this.status = ReservationStatus.CANCELLED;
         this.cancelReason = reason;
@@ -99,10 +100,10 @@ public class Reservation extends BaseEntity {
         validateTransition(ReservationStatus.SHIPPING);
 
         if (receiveCarrier == null || receiveCarrier.isBlank()) {
-            throw new ServiceException("400-13", "배송사 정보는 필수입니다.");
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "배송사 정보는 필수입니다.");
         }
         if (receiveTrackingNumber == null || receiveTrackingNumber.isBlank()) {
-            throw new ServiceException("400-14", "운송장 번호는 필수입니다.");
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "운송장 번호는 필수입니다.");
         }
 
         this.status = ReservationStatus.SHIPPING;
@@ -139,10 +140,10 @@ public class Reservation extends BaseEntity {
         validateTransition(ReservationStatus.RETURNING);
 
         if (returnCarrier == null || returnCarrier.isBlank()) {
-            throw new ServiceException("400-15", "배송사 정보는 필수입니다.");
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "배송사 정보는 필수입니다.");
         }
         if (returnTrackingNumber == null || returnTrackingNumber.isBlank()) {
-            throw new ServiceException("400-16", "운송장 번호는 필수입니다.");
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "운송장 번호는 필수입니다.");
         }
 
         this.status = ReservationStatus.RETURNING;
@@ -192,7 +193,7 @@ public class Reservation extends BaseEntity {
         Set<ReservationStatus> allowedTransitions = getAllowedTransitions();
 
         if (!allowedTransitions.contains(newStatus)) {
-            throw new ServiceException("400-12",
+            throw new ServiceException(HttpStatus.BAD_REQUEST,
                     String.format("현재 상태(%s)에서 %s(으)로 전환할 수 없습니다.",
                             this.status.getDescription(),
                             newStatus.getDescription()));
