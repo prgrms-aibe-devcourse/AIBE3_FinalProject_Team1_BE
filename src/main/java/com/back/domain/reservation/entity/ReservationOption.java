@@ -1,6 +1,6 @@
 package com.back.domain.reservation.entity;
 
-import com.back.domain.post.post.entity.PostOption;
+import com.back.domain.post.entity.PostOption;
 import com.back.global.jpa.entity.BaseEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;

@@ -2,10 +2,10 @@ package com.back.domain.region.region.controller;
 
 import com.back.domain.member.service.AuthTokenService;
 import com.back.domain.member.service.RefreshTokenStore;
-import com.back.domain.region.region.dto.RegionCreateReqBody;
-import com.back.domain.region.region.dto.RegionResBody;
-import com.back.domain.region.region.dto.RegionUpdateReqBody;
-import com.back.domain.region.region.service.RegionService;
+import com.back.domain.region.dto.RegionCreateReqBody;
+import com.back.domain.region.dto.RegionResBody;
+import com.back.domain.region.dto.RegionUpdateReqBody;
+import com.back.domain.region.service.RegionService;
 import com.back.global.security.SecurityUser;
 import com.back.global.web.CookieHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -104,10 +104,12 @@ class RegionAdmControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(reqBody))
                         .cookie(new Cookie("accessToken", "mock-access-token")))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.name").value("새 지역"))
-                .andExpect(jsonPath("$.child").isEmpty());
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value(201))
+                .andExpect(jsonPath("$.msg").value("지역 등록 성공"))
+                .andExpect(jsonPath("$.data.id").value(1))
+                .andExpect(jsonPath("$.data.name").value("새 지역"))
+                .andExpect(jsonPath("$.data.child").isEmpty());
 
         verify(regionService).createRegion(any(RegionCreateReqBody.class));
     }
@@ -126,9 +128,11 @@ class RegionAdmControllerTest {
                         .content(objectMapper.writeValueAsString(reqBody))
                         .cookie(new Cookie("accessToken", "mock-access-token")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.name").value("수정된 지역"))
-                .andExpect(jsonPath("$.child").isEmpty());
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.msg").value("지역 수정 성공"))
+                .andExpect(jsonPath("$.data.id").value(1))
+                .andExpect(jsonPath("$.data.name").value("수정된 지역"))
+                .andExpect(jsonPath("$.data.child").isEmpty());
 
         verify(regionService).updateRegion(eq(1L), any(RegionUpdateReqBody.class));
     }
@@ -142,7 +146,10 @@ class RegionAdmControllerTest {
         // when & then
         mockMvc.perform(delete("/api/v1/adm/regions/{id}", 1L)
                         .cookie(new Cookie("accessToken", "mock-access-token")))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.msg").value("지역 삭제 성공"))
+                .andExpect(jsonPath("$.data").doesNotExist());
 
         verify(regionService).deleteRegion(1L);
     }

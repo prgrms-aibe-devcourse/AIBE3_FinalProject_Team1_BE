@@ -1,8 +1,8 @@
 package com.back.domain.region.region.controller;
 
-import com.back.domain.region.region.common.ChildRegion;
-import com.back.domain.region.region.dto.RegionResBody;
-import com.back.domain.region.region.service.RegionService;
+import com.back.domain.region.common.ChildRegion;
+import com.back.domain.region.dto.RegionResBody;
+import com.back.domain.region.service.RegionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -46,21 +46,23 @@ class RegionControllerTest {
         RegionResBody region1 = new RegionResBody(1L, "서울", List.of());
         RegionResBody region2 = new RegionResBody(2L, "부산", List.of());
         List<RegionResBody> regions = Arrays.asList(region1, region2);
-        
+
         when(regionService.getRegions()).thenReturn(regions);
 
         // when & then
         mockMvc.perform(get("/api/v1/regions")
-                .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[0].id").value(1))
-                .andExpect(jsonPath("$[0].name").value("서울"))
-                .andExpect(jsonPath("$[0].child").isEmpty())
-                .andExpect(jsonPath("$[1].id").value(2))
-                .andExpect(jsonPath("$[1].name").value("부산"))
-                .andExpect(jsonPath("$[1].child").isEmpty());
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.msg").value("지역 목록 조회 성공"))
+                .andExpect(jsonPath("$.data", hasSize(2)))
+                .andExpect(jsonPath("$.data[0].id").value(1))
+                .andExpect(jsonPath("$.data[0].name").value("서울"))
+                .andExpect(jsonPath("$.data[0].child").isEmpty())
+                .andExpect(jsonPath("$.data[1].id").value(2))
+                .andExpect(jsonPath("$.data[1].name").value("부산"))
+                .andExpect(jsonPath("$.data[1].child").isEmpty());
     }
 
     @Test
@@ -71,10 +73,12 @@ class RegionControllerTest {
 
         // when & then
         mockMvc.perform(get("/api/v1/regions")
-                .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$", hasSize(0)));
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.msg").value("지역 목록 조회 성공"))
+                .andExpect(jsonPath("$.data", hasSize(0)));
     }
 
     @Test
@@ -82,21 +86,27 @@ class RegionControllerTest {
     void readRegions_withHierarchy() throws Exception {
         // given
         RegionResBody childRegion = new RegionResBody(2L, "강남구", List.of());
-        RegionResBody parentRegion = new RegionResBody(1L, "서울", Stream.of(childRegion).map(r -> new ChildRegion(r.id(), r.name())).toList());
+        RegionResBody parentRegion = new RegionResBody(
+                1L,
+                "서울",
+                Stream.of(childRegion).map(r -> new ChildRegion(r.id(), r.name())).toList()
+        );
         List<RegionResBody> regions = List.of(parentRegion);
-        
+
         when(regionService.getRegions()).thenReturn(regions);
 
         // when & then
         mockMvc.perform(get("/api/v1/regions")
-                .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].id").value(1))
-                .andExpect(jsonPath("$[0].name").value("서울"))
-                .andExpect(jsonPath("$[0].child", hasSize(1)))
-                .andExpect(jsonPath("$[0].child[0].id").value(2))
-                .andExpect(jsonPath("$[0].child[0].name").value("강남구"));
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.msg").value("지역 목록 조회 성공"))
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].id").value(1))
+                .andExpect(jsonPath("$.data[0].name").value("서울"))
+                .andExpect(jsonPath("$.data[0].child", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].child[0].id").value(2))
+                .andExpect(jsonPath("$.data[0].child[0].name").value("강남구"));
     }
 }

@@ -1,8 +1,9 @@
 package com.back.domain.reservation.entity;
 
+
 import com.back.domain.member.entity.Member;
-import com.back.domain.post.post.entity.Post;
-import com.back.domain.post.post.entity.PostOption;
+import com.back.domain.post.entity.Post;
+import com.back.domain.post.entity.PostOption;
 import com.back.domain.reservation.common.ReservationDeliveryMethod;
 import com.back.domain.reservation.common.ReservationStatus;
 import com.back.domain.review.review.entity.Review;
