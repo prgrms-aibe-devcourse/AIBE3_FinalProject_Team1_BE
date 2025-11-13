@@ -1,7 +1,7 @@
 package com.back.domain.report.common.validator;
 
 import com.back.domain.report.common.ReportType;
-import com.back.domain.review.review.repository.ReviewRepository;
+import com.back.domain.review.repository.ReviewRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

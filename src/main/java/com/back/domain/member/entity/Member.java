@@ -6,7 +6,10 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
@@ -15,10 +18,8 @@ import java.util.List;
 
 @Entity
 @Getter
-@Setter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@Builder
 public class Member extends BaseEntity {
     @Column(unique = true, nullable = false)
     private String email;
@@ -38,9 +39,31 @@ public class Member extends BaseEntity {
     private boolean isBanned;
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    @Builder.Default
-    private MemberRole role = MemberRole.USER;
+    private MemberRole role;
     private String profileImgUrl;
+
+    public Member(String email, String password, String name, String phoneNumber,
+                  String address1, String address2, String nickname, MemberRole role, String profileImgUrl) {
+        this.email = email;
+        this.password = password;
+        this.name = name;
+        this.phoneNumber = phoneNumber;
+        this.address1 = address1;
+        this.address2 = address2;
+        this.nickname = nickname;
+        this.isBanned = false;
+        this.role = role;
+        this.profileImgUrl = profileImgUrl;
+    }
+
+    public Member(String email, String password, String name, String phoneNumber,
+                  String address1, String address2, String nickname, MemberRole role) {
+        this(email, password, name, phoneNumber, address1, address2, nickname, role, null);
+    }
+    public Member(String email, String password, String name, String phoneNumber,
+                  String address1, String address2, String nickname) {
+        this(email, password, name, phoneNumber, address1, address2, nickname, MemberRole.USER, null);
+    }
 
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));

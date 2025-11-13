@@ -1,11 +1,14 @@
-package com.back.domain.review.review.dto;
+package com.back.domain.review.dto;
+
+import java.time.LocalDateTime;
 
 public record ReviewDto(
         Long id,
-        int equipmentsScore,
+        int equipmentScore,
         int kindnessScore,
         int responseTimeScore,
         String comment,
+        LocalDateTime createdAt,
         ReviewAuthorDto author
 ) {
 }

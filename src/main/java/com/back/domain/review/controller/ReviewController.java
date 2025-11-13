@@ -1,8 +1,9 @@
-package com.back.domain.review.review.controller;
+package com.back.domain.review.controller;
 
-import com.back.domain.review.review.dto.ReviewDto;
-import com.back.domain.review.review.dto.ReviewWriteReqBody;
-import com.back.domain.review.review.service.ReviewService;
+import com.back.domain.review.dto.ReviewDto;
+import com.back.domain.review.dto.ReviewWriteReqBody;
+import com.back.domain.review.service.ReviewService;
+import com.back.global.rsData.RsData;
 import com.back.global.security.SecurityUser;
 import com.back.standard.util.page.PagePayload;
 import com.back.standard.util.page.PageUt;
@@ -21,34 +22,37 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping
 @RequiredArgsConstructor
-public class ReviewController {
+public class ReviewController implements ReviewApi {
     private final ReviewService reviewService;
 
     @PostMapping("/api/v1/reviews/{reservationId}")
-    public ResponseEntity<String> write(
+    public ResponseEntity<RsData<Void>> write(
             @PathVariable Long reservationId,
-            @Valid@RequestBody ReviewWriteReqBody reqBody,
+            @Valid @RequestBody ReviewWriteReqBody reqBody,
             @AuthenticationPrincipal SecurityUser securityUser
     ) {
         reviewService.writeReview(reservationId, reqBody, securityUser.getId());
-        return ResponseEntity.status(HttpStatus.CREATED).body("리뷰가 작성되었습니다.");
+        RsData<Void> body = new RsData<>(HttpStatus.CREATED, "리뷰가 작성되었습니다.");
+        return ResponseEntity.status(HttpStatus.CREATED).body(body);
     }
 
     @GetMapping("/api/v1/posts/{postId}/reviews")
-    public ResponseEntity<PagePayload<ReviewDto>> getPostReviews(
+    public ResponseEntity<RsData<PagePayload<ReviewDto>>> getPostReviews(
             @PathVariable Long postId,
             @ParameterObject @PageableDefault(size = 30, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
     ){
         Page<ReviewDto> pages = reviewService.getPostReviews(pageable, postId);
-        return ResponseEntity.ok(PageUt.of(pages));
+        RsData<PagePayload<ReviewDto>> body = new RsData<>(HttpStatus.OK, "성공", PageUt.of(pages));
+        return ResponseEntity.ok(body);
     }
 
     @GetMapping("/api/v1/members/{memberId}/reviews")
-    public ResponseEntity<PagePayload<ReviewDto>> getMemberReviews(
+    public ResponseEntity<RsData<PagePayload<ReviewDto>>> getMemberReviews(
             @PathVariable Long memberId,
             @ParameterObject @PageableDefault(size = 30, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
     ){
         Page<ReviewDto> pages = reviewService.getMemberReviews(pageable, memberId);
-        return ResponseEntity.ok(PageUt.of(pages));
+        RsData<PagePayload<ReviewDto>> body = new RsData<>(HttpStatus.OK, "성공", PageUt.of(pages));
+        return ResponseEntity.ok(body);
     }
 }

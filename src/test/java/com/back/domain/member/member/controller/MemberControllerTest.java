@@ -63,17 +63,10 @@ class MemberControllerTest {
 
     @BeforeEach
     void setup() {
-        Member member = Member.builder()
-                .email("test@example.com")
-                .password("password123")
-                .name("테스트")
-                .nickname("테스트닉네임")
-                .phoneNumber("01012345678")
-                .address1("서울시 강남구")
-                .address2("테헤란로 123")
-                .role(MemberRole.USER)
-                .isBanned(false)
-                .build();
+        Member member = new Member("test@example.com", "password123",
+                "테스트", "01012345678",
+                "서울시 강남구", "테헤란로 123", "테스트닉네임",
+                MemberRole.USER);
 
         // ReflectionTestUtils를 사용하여 ID 설정
         ReflectionTestUtils.setField(member, "id", 1L);

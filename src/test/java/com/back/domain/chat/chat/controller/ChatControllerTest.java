@@ -5,7 +5,6 @@ import com.back.domain.category.repository.CategoryRepository;
 import com.back.domain.chat.chat.dto.CreateChatRoomReqBody;
 import com.back.domain.chat.chat.repository.ChatRoomRepository;
 import com.back.domain.chat.chat.service.ChatService;
-import com.back.domain.member.common.MemberRole;
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.repository.MemberRepository;
 import com.back.domain.post.post.common.ReceiveMethod;
@@ -75,61 +74,14 @@ class ChatControllerTest {
         memberRepository.deleteAll();
 
         // 회원 생성
-        member1 = memberRepository.save(Member.builder()
-                .email("user1@test.com")
-                .password("1234")
-                .name("홍길동")
-                .phoneNumber("010-1111-1111")
-                .address1("서울시 강남구")
-                .address2("테헤란로 123")
-                .nickname("hong")
-                .isBanned(false)
-                .role(MemberRole.USER)
-                .profileImgUrl(null)
-                .build()
-        );
-
-        member2 = memberRepository.save(Member.builder()
-                .email("user2@test.com")
-                .password("1234")
-                .name("김철수")
-                .phoneNumber("010-2222-2222")
-                .address1("서울시 서초구")
-                .address2("서초대로 456")
-                .nickname("kim")
-                .isBanned(false)
-                .role(MemberRole.USER)
-                .profileImgUrl(null)
-                .build()
-        );
-
-        member3 = memberRepository.save(Member.builder()
-                .email("user3@test.com")
-                .password("1234")
-                .name("이영희")
-                .phoneNumber("010-3333-3333")
-                .address1("서울시 마포구")
-                .address2("월드컵북로 789")
-                .nickname("lee")
-                .isBanned(false)
-                .role(MemberRole.USER)
-                .profileImgUrl(null)
-                .build()
-        );
-
-        member4 = memberRepository.save(Member.builder()
-                .email("user4@test.com")
-                .password("1234")
-                .name("박민수")
-                .phoneNumber("010-4444-4444")
-                .address1("서울시 송파구")
-                .address2("잠실로 101")
-                .nickname("park")
-                .isBanned(false)
-                .role(MemberRole.USER)
-                .profileImgUrl(null)
-                .build()
-        );
+        member1 = new Member("user1@test.com", "1234", "홍길동", "010-1111-1111",
+                "서울시 강남구", "테헤란로 123", "hong");
+        member2 = new Member("user2@test.com", "1234", "김철수", "010-2222-2222",
+                "서울시 서초구", "서초대로 456", "kim");
+        member3 = new Member("user3@test.com", "1234", "이영희", "010-3333-3333",
+                "서울시 마포구", "월드컵북로 789", "lee");
+        member4 = new Member("user4@test.com", "1234", "박민수", "010-4444-4444",
+                "서울시 송파구", "잠실로 101", "park");
 
         // 게시글 생성
         Category category = categoryRepository.save(

@@ -1,4 +1,4 @@
-package com.back.domain.review.review.dto;
+package com.back.domain.review.dto;
 
 public record ReviewAuthorDto(
         Long id,

@@ -18,6 +18,10 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
 
+    public long count() {
+        return memberRepository.count();
+    }
+
     public Member getById(long userId) {
         return memberRepository.findById(userId).orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, "존재하지 않는 회원입니다."));
     }
@@ -32,17 +36,9 @@ public class MemberService {
 
     public Member join(MemberJoinReqBody reqBody, MemberRole role) {
         String password = passwordEncoder.encode(reqBody.password());
-        Member member = Member.builder()
-                .email(reqBody.email())
-                .password(password)
-                .name(reqBody.name())
-                .address1(reqBody.address1())
-                .address2(reqBody.address2())
-                .nickname(reqBody.nickname())
-                .phoneNumber(reqBody.phoneNumber())
-                .isBanned(false)
-                .role(role)
-                .build();
+        Member member = new Member(reqBody.email(), password, reqBody.name(),
+                reqBody.address1(), reqBody.address2(), reqBody.nickname(),
+                reqBody.phoneNumber(), role);
         return memberRepository.save(member);
     }
 
@@ -50,9 +46,5 @@ public class MemberService {
         if (!passwordEncoder.matches(password, member.getPassword())) {
             throw new ServiceException(HttpStatus.NOT_FOUND, "비밀번호가 올바르지 않습니다.");
         }
-    }
-
-    public long count() {
-        return memberRepository.count();
     }
 }
