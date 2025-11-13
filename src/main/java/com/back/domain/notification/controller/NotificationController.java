@@ -1,10 +1,17 @@
 package com.back.domain.notification.controller;
 
+import com.back.domain.notification.common.NotificationData;
+import com.back.domain.notification.dto.NotificationResBody;
 import com.back.domain.notification.dto.NotificationUnreadResBody;
 import com.back.domain.notification.service.NotificationService;
 import com.back.global.rsData.RsData;
 import com.back.global.security.SecurityUser;
+import com.back.standard.util.page.PagePayload;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -16,6 +23,20 @@ import org.springframework.web.bind.annotation.*;
 public class NotificationController implements NotificationApi {
 
     private final NotificationService notificationService;
+
+    @GetMapping
+    public ResponseEntity<RsData<PagePayload<NotificationResBody<? extends NotificationData>>>> readNotifications(
+            @AuthenticationPrincipal SecurityUser securityUser,
+            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+
+        PagePayload<NotificationResBody<? extends NotificationData>> data =
+                notificationService.getNotifications(securityUser.getId(), pageable);
+
+        RsData<PagePayload<NotificationResBody<? extends NotificationData>>> response =
+                new RsData<>(HttpStatus.OK, "알림 목록 조회", data);
+
+        return ResponseEntity.ok(response);
+    }
 
     @GetMapping("/unread")
     public ResponseEntity<RsData<NotificationUnreadResBody>> hasUnread(@AuthenticationPrincipal SecurityUser securityUser) {

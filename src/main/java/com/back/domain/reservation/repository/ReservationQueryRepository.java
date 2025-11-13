@@ -1,5 +1,6 @@
 package com.back.domain.reservation.repository;
 
+import com.back.domain.member.entity.QMember;
 import com.back.domain.reservation.common.ReservationStatus;
 import com.back.domain.reservation.entity.Reservation;
 import com.back.global.queryDsl.CustomQuerydslRepositorySupport;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.util.List;
 
+import static com.back.domain.post.entity.QPost.post;
 import static com.back.domain.reservation.entity.QReservation.reservation;
 
 
@@ -90,5 +92,18 @@ public class ReservationQueryRepository extends CustomQuerydslRepositorySupport
         }
         return reservation.reservationStartAt.lt(endAt)
                 .and(reservation.reservationEndAt.goe(startAt));
+    }
+
+    public List<Reservation> findWithPostAndAuthorByIds(List<Long> ids) {
+        return select(reservation)
+                .from(reservation)
+                .leftJoin(reservation.author, new QMember("reservationAuthor"))
+                .fetchJoin()
+                .leftJoin(reservation.post, post)
+                .fetchJoin()
+                .leftJoin(post.author, new QMember("postAuthor"))
+                .fetchJoin()
+                .where(reservation.id.in(ids))
+                .fetch();
     }
 }
