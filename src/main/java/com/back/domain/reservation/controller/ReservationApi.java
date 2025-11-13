@@ -56,7 +56,7 @@ public interface ReservationApi {
             description = "특정 예약의 상세 정보를 조회합니다. 게스트 또는 호스트만 조회 가능합니다."
     )
     ResponseEntity<RsData<ReservationDto>> getReservationDetail(
-            @Parameter(description = "예약 ID", required = true) @PathVariable Long reservationId,
+            @Parameter(description = "예약 ID", required = true) @PathVariable Long id,
             @Parameter(hidden = true) @AuthenticationPrincipal SecurityUser securityUser
     );
 
@@ -65,7 +65,7 @@ public interface ReservationApi {
             description = "예약의 상태를 변경합니다. 각 상태 전환은 역할(게스트/호스트)과 현재 상태에 따라 권한이 제한됩니다."
     )
     ResponseEntity<RsData<ReservationDto>> updateReservationStatus(
-            @Parameter(description = "예약 ID", required = true) @PathVariable Long reservationId,
+            @Parameter(description = "예약 ID", required = true) @PathVariable Long id,
             @Parameter(hidden = true) @AuthenticationPrincipal SecurityUser securityUser,
             @Valid @RequestBody UpdateReservationStatusReqBody reqBody
     );
@@ -75,7 +75,7 @@ public interface ReservationApi {
             description = "예약의 기본 정보(날짜, 배송 방식, 옵션 등)를 수정합니다. 승인 대기 상태에서만 수정 가능하며, 게스트만 수정할 수 있습니다."
     )
     ResponseEntity<RsData<ReservationDto>> updateReservation(
-            @Parameter(description = "예약 ID", required = true) @PathVariable Long reservationId,
+            @Parameter(description = "예약 ID", required = true) @PathVariable Long id,
             @Parameter(hidden = true) @AuthenticationPrincipal SecurityUser securityUser,
             @Valid @RequestBody UpdateReservationReqBody reqBody
     );
