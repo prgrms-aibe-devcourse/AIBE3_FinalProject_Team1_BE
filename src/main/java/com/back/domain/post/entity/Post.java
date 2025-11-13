@@ -55,7 +55,11 @@ public class Post extends BaseEntity {
     private List<PostRegion> postRegions = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id", nullable = false)
+    @JoinColumn(
+            name = "category_id",
+            nullable = false,
+            foreignKey = @ForeignKey(name = "fk_post_category")
+    )
     private Category category;
 
     public static Post of(
