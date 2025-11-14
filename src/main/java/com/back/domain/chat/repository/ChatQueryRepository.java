@@ -154,4 +154,16 @@ public class ChatQueryRepository extends CustomQuerydslRepositorySupport {
 
         return count != null && count > 0;
     }
+
+    public Long findChatMemberId(Long chatRoomId, Long memberId) {
+        QChatMember qChatMember = QChatMember.chatMember;
+
+        return select(qChatMember.id)
+                .from(qChatMember)
+                .where(
+                        qChatMember.chatRoom.id.eq(chatRoomId),
+                        qChatMember.member.id.eq(memberId)
+                )
+                .fetchOne();
+    }
 }

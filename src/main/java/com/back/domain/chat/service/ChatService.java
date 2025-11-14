@@ -2,7 +2,9 @@ package com.back.domain.chat.service;
 
 import com.back.domain.chat.dto.*;
 import com.back.domain.chat.entity.ChatMember;
+import com.back.domain.chat.entity.ChatMessage;
 import com.back.domain.chat.entity.ChatRoom;
+import com.back.domain.chat.repository.ChatMessageRepository;
 import com.back.domain.chat.repository.ChatQueryRepository;
 import com.back.domain.chat.repository.ChatRoomRepository;
 import com.back.domain.member.entity.Member;
@@ -28,6 +30,7 @@ public class ChatService {
     private final MemberRepository memberRepository;
     private final PostRepository postRepository;
     private final ChatRoomRepository chatRoomRepository;
+    private final ChatMessageRepository chatMessageRepository;
     private final ChatQueryRepository chatQueryRepository;
 
     @Transactional
@@ -111,4 +114,27 @@ public class ChatService {
 
         return PageUt.of(chatMessages);
     }
+
+    @Transactional
+    public ChatMessageDto saveMessage(SendChatMessageDto body, Long memberId) {
+        Long chatRoomId = body.chatRoomId();
+        String content = body.content();
+
+        Long chatMemberId = chatQueryRepository.findChatMemberId(chatRoomId, memberId);
+        if(chatMemberId == null) {
+            throw new ServiceException(HttpStatus.FORBIDDEN, "채팅방이 존재하지 않거나 접근 권한이 없습니다.");
+        }
+
+        ChatMessage chatMessage = ChatMessage.create(content, chatRoomId, chatMemberId);
+
+        chatMessageRepository.save(chatMessage);
+
+        return new ChatMessageDto(
+                chatMessage.getId(),
+                chatMessage.getChatMemberId(),
+                chatMessage.getContent(),
+                chatMessage.getCreatedAt()
+        );
+    }
+
 }
