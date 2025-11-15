@@ -17,6 +17,7 @@ import com.back.standard.util.page.PageUt;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +33,7 @@ public class ChatService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatQueryRepository chatQueryRepository;
+    private final RedisTemplate<String, String> redisTemplate;
 
     @Transactional
     public CreateChatRoomResBody createOrGetChatRoom(Long postId, Long memberId) {
@@ -56,10 +58,18 @@ public class ChatService {
         return new CreateChatRoomResBody("채팅방이 생성되었습니다.", chatRoom.getId());
     }
 
-    public PagePayload<ChatRoomDto> getMyChatRooms(Long memberId, Pageable pageable, String keyword) {
-        Page<ChatRoomDto> chatRooms = chatQueryRepository.getMyChatRooms(memberId, pageable, keyword);
+    public PagePayload<ChatRoomListDto> getMyChatRooms(Long memberId, Pageable pageable, String keyword) {
+        Page<ChatRoomListDto> chatRooms = chatQueryRepository.getMyChatRooms(memberId, pageable, keyword);
 
-        return PageUt.of(chatRooms);
+        Page<ChatRoomListDto> enrichedPage = chatRooms.map(dto -> {
+            String key = "unread:" + memberId + ":" + dto.id();
+            String unreadStr = redisTemplate.opsForValue().get(key);
+            Integer unreadCount = unreadStr == null ? 0 : Integer.parseInt(unreadStr);
+
+            return dto.withUnreadCount(unreadCount);
+        });
+
+        return PageUt.of(enrichedPage);
     }
 
     public ChatRoomDto getChatRoom(Long chatRoomId, Long memberId) {
@@ -119,21 +129,38 @@ public class ChatService {
     public ChatMessageDto saveMessage(Long chatRoomId, SendChatMessageDto body, Long memberId) {
         String content = body.content();
 
-        Long chatMemberId = chatQueryRepository.findChatMemberId(chatRoomId, memberId);
-        if(chatMemberId == null) {
-            throw new ServiceException(HttpStatus.FORBIDDEN, "채팅방이 존재하지 않거나 접근 권한이 없습니다.");
-        }
+        ChatMember chatMember = chatQueryRepository.findChatMember(chatRoomId, memberId)
+                .orElseThrow(() -> new ServiceException(HttpStatus.FORBIDDEN, "채팅방이 존재하지 않거나 접근 권한이 없습니다."));
 
-        ChatMessage chatMessage = ChatMessage.create(content, chatRoomId, chatMemberId);
 
+        ChatMessage chatMessage = ChatMessage.create(content, chatRoomId, chatMember.getId());
         chatMessageRepository.save(chatMessage);
+
+        Long otherMemberId = chatQueryRepository.findOtherMemberId(chatRoomId, memberId)
+                        .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, "채팅 상대를 찾을 수 없습니다."));
+
+        String key = "unread:" + otherMemberId + ":" + chatRoomId;
+        redisTemplate.opsForValue().increment(key);
+
+        chatMember.getChatRoom().updateLastMessage(chatMessage.getContent(), chatMessage.getCreatedAt());
 
         return new ChatMessageDto(
                 chatMessage.getId(),
-                chatMessage.getChatMemberId(),
+                memberId,
                 chatMessage.getContent(),
                 chatMessage.getCreatedAt()
         );
+    }
+
+    @Transactional
+    public void markAsRead(Long chatRoomId, Long memberId, Long lastMessageId) {
+        ChatMember chatMember = chatQueryRepository.findChatMember(chatRoomId, memberId)
+                .orElseThrow(() -> new ServiceException(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."));
+
+        chatMember.updateLastReadMessageId(lastMessageId);
+
+        String key = "unread:" + memberId + ":" + chatRoomId;
+        redisTemplate.delete(key);
     }
 
 }

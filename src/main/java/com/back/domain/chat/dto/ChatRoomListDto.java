@@ -10,7 +10,18 @@ public record ChatRoomListDto(
 
         String lastMessage,
         LocalDateTime lastMessageTime,
-        Long unreadCount
+        Integer unreadCount
 ) {
+    public ChatRoomListDto withUnreadCount(Integer unreadCount) {
+        return new ChatRoomListDto(
+                this.id,
+                this.createdAt,
+                this.post,
+                this.otherMember,
+                this.lastMessage,
+                this.lastMessageTime,
+                unreadCount
+        );
+    }
 }
 
