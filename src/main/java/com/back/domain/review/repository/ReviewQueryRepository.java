@@ -9,6 +9,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 import static com.back.domain.post.entity.QPost.post;
 import static com.back.domain.reservation.entity.QReservation.reservation;
 import static com.back.domain.review.entity.QReview.review;
@@ -75,5 +77,15 @@ public class ReviewQueryRepository extends CustomQuerydslRepositorySupport {
                         .join(reservation.post, post)
                         .where(post.author.id.eq(memberId))
         );
+    }
+
+    public List<Review> findTop30ByPostId(Long postId) {
+        return selectFrom(review)
+                .join(review.reservation, reservation)
+                .join(reservation.post, post)
+                .where(post.id.eq(postId))
+                .orderBy(review.id.desc())
+                .limit(30)
+                .fetch();
     }
 }

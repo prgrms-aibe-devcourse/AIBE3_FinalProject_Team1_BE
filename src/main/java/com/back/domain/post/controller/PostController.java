@@ -5,6 +5,7 @@ import com.back.domain.post.dto.req.PostUpdateReqBody;
 import com.back.domain.post.dto.res.PostDetailResBody;
 import com.back.domain.post.dto.res.PostListResBody;
 import com.back.domain.post.service.PostService;
+import com.back.domain.review.service.ReviewSummaryService;
 import com.back.global.rsData.RsData;
 import com.back.global.security.SecurityUser;
 import com.back.standard.util.page.PagePayload;
@@ -27,6 +28,7 @@ import java.util.List;
 public class PostController implements PostApi {
 
     private final PostService postService;
+    private final ReviewSummaryService reviewSummaryService;
 
     @PostMapping
     public ResponseEntity<RsData<Long>> createPost(
@@ -106,4 +108,10 @@ public class PostController implements PostApi {
         return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "게시글이 삭제되었습니다."));
     }
 
+    @GetMapping("/{id}/reviews/summary")
+    public ResponseEntity<RsData<String>> summarizeReviews(@PathVariable Long id) {
+        String body = reviewSummaryService.summarizeReviews(id);
+
+        return ResponseEntity.ok(new RsData<>(HttpStatus.OK, HttpStatus.OK.name(), body));
+    }
 }

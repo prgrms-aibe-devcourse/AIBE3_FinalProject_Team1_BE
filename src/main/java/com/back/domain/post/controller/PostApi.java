@@ -80,4 +80,6 @@ public interface PostApi {
             @AuthenticationPrincipal SecurityUser user
     );
 
+    @Operation(summary = "게시글 후기 요약 API", description = "AI가 특정 게시글의 후기 목록을 요약합니다.")
+    ResponseEntity<RsData<String>> summarizeReviews(@PathVariable Long postId);
 }
