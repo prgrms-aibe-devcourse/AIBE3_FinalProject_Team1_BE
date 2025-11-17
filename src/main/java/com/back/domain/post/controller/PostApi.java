@@ -18,8 +18,9 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -27,7 +28,7 @@ import java.util.List;
 public interface PostApi {
 
     @Operation(summary = "게시글 생성 API", description = "새로운 게시글을 생성합니다.")
-    ResponseEntity<RsData<PostCreateResBody>> createPost(@Valid @RequestBody PostCreateReqBody postCreateReqBody, @AuthenticationPrincipal SecurityUser user);
+    ResponseEntity<RsData<PostCreateResBody>> createPost(@Valid @RequestPart("request") PostCreateReqBody reqBody, @RequestPart(value = "file", required = false) List<MultipartFile> files, @AuthenticationPrincipal SecurityUser user);
 
     @Operation(summary = "게시글 목록 조회 API", description = "게시글 목록을 조회합니다.")
     ResponseEntity<RsData<PagePayload<PostListResBody>>> getPostList(
@@ -70,8 +71,9 @@ public interface PostApi {
 
     @Operation(summary = "게시글 수정 API", description = "특정 게시글의 정보를 수정합니다.")
     ResponseEntity<RsData<Void>> updatePost(
-            @PathVariable Long postId,
-            @Valid @RequestBody PostUpdateReqBody reqBody,
+            @PathVariable Long id,
+            @Valid @RequestPart("request") PostUpdateReqBody reqBody,
+            @RequestPart(value = "file", required = false) List<MultipartFile> files,
             @AuthenticationPrincipal SecurityUser user
     );
 

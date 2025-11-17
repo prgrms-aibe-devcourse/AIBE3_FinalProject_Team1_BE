@@ -17,9 +17,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -31,13 +33,17 @@ public class PostController implements PostApi {
     private final PostService postService;
     private final ReviewSummaryService reviewSummaryService;
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<RsData<PostCreateResBody>> createPost(
-            @Valid @RequestBody PostCreateReqBody reqBody,
-            @AuthenticationPrincipal SecurityUser user) {
-        PostCreateResBody body = this.postService.createPost(reqBody, user.getId());
+            @Valid @RequestPart("request") PostCreateReqBody reqBody,
+            @RequestPart(value = "file", required = false) List<MultipartFile> files,
+            @AuthenticationPrincipal SecurityUser user
+    ) {
+        
+        PostCreateResBody body = this.postService.createPost(reqBody, files, user.getId());
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(new RsData<>(HttpStatus.CREATED, "게시글이 생성되었습니다.", body));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new RsData<>(HttpStatus.CREATED, "게시글이 생성되었습니다.", body));
     }
 
     @GetMapping
@@ -92,10 +98,11 @@ public class PostController implements PostApi {
     @PutMapping("/{id}")
     public ResponseEntity<RsData<Void>> updatePost(
             @PathVariable Long id,
-            @Valid @RequestBody PostUpdateReqBody reqBody,
+            @Valid @RequestPart("request") PostUpdateReqBody reqBody,
+            @RequestPart(value = "file", required = false) List<MultipartFile> files,
             @AuthenticationPrincipal SecurityUser user) {
 
-        postService.updatePost(id, reqBody, user.getId());
+        postService.updatePost(id, reqBody, files, user.getId());
 
         return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "게시글이 수정되었습니다."));
     }

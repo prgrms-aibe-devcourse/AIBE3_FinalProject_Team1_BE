@@ -37,6 +37,10 @@ spring:
           model: gpt-4.1-mini
           temperature: 0.0
           max-tokens: 1024
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 30MB
 springdoc:
   default-produces-media-type: application/json;charset=UTF-8
 logging:
@@ -54,3 +58,8 @@ custom:
     expireSeconds: 1000
   refreshToken:
     expireSeconds: 1000000
+
+cloud:
+  aws:
+    s3:
+      bucket: dev-chwimeet-bucket-1

@@ -1,6 +1,3 @@
-import org.gradle.kotlin.dsl.annotationProcessor
-import org.gradle.kotlin.dsl.implementation
-
 plugins {
     java
     id("org.springframework.boot") version "3.5.6"
@@ -62,6 +59,9 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    // AWS S3
+    implementation("software.amazon.awssdk:s3:2.25.10")
 }
 
 val querydslSrcDir = "src/main/generated"
