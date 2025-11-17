@@ -2,6 +2,7 @@ package com.back.domain.post.controller;
 
 import com.back.domain.post.dto.req.PostCreateReqBody;
 import com.back.domain.post.dto.req.PostUpdateReqBody;
+import com.back.domain.post.dto.res.PostCreateResBody;
 import com.back.domain.post.dto.res.PostDetailResBody;
 import com.back.domain.post.dto.res.PostListResBody;
 import com.back.global.rsData.RsData;
@@ -26,7 +27,7 @@ import java.util.List;
 public interface PostApi {
 
     @Operation(summary = "게시글 생성 API", description = "새로운 게시글을 생성합니다.")
-    ResponseEntity<RsData<Long>> createPost(@Valid @RequestBody PostCreateReqBody postCreateReqBody, @AuthenticationPrincipal SecurityUser user);
+    ResponseEntity<RsData<PostCreateResBody>> createPost(@Valid @RequestBody PostCreateReqBody postCreateReqBody, @AuthenticationPrincipal SecurityUser user);
 
     @Operation(summary = "게시글 목록 조회 API", description = "게시글 목록을 조회합니다.")
     ResponseEntity<RsData<PagePayload<PostListResBody>>> getPostList(

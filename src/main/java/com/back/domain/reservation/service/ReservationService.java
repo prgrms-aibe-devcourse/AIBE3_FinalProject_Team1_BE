@@ -312,7 +312,7 @@ public class ReservationService {
         Reservation reservation = reservationQueryRepository.findByIdWithPostAndAuthor(reservationId)
                 .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, "해당 예약을 찾을 수 없습니다."));
 
-        // 권한 체크
+        // 역할 확인
         boolean isGuest = reservation.getAuthor().getId().equals(memberId);
         boolean isHost = reservation.getPost().getAuthor().getId().equals(memberId);
 
@@ -320,96 +320,50 @@ public class ReservationService {
             throw new ServiceException(HttpStatus.FORBIDDEN, "해당 예약의 상태를 변경할 권한이 없습니다.");
         }
 
-        // 상태별 처리 및 권한 체크
+        // 상태 변경 권한 체크
+        validateStatusTransitionPermission(reqBody.status(), isHost, isGuest);
+
+        // 상태별 처리
         switch (reqBody.status()) {
-            case PENDING_PAYMENT -> {
-                // 승인 (승인 대기 -> 결제 대기)
-                validateHostOnly(isHost, "승인");
-                reservation.approve();
-            }
-            case REJECTED -> {
-                // 거절 (승인 대기 -> 승인 거절)
-                validateHostOnly(isHost, "거절");
-                reservation.reject(reqBody.rejectReason());
-            }
-            case CANCELLED -> {
-                // 취소 (여러 단계 -> 예약 취소)
-                validateGuestOnly(isGuest, "취소");
-                reservation.cancel(reqBody.cancelReason());
-            }
-            case PENDING_PICKUP -> {
-                // 결제 완료 (결제 대기 -> 수령 대기)
-                reservation.completePayment();
-            }
-            case SHIPPING -> {
-                // 택배 배송 시작 (수령 대기 -> 배송 중)
-                validateHostOnly(isHost, "배송 시작");
-                reservation.startShipping(
-                        reqBody.receiveCarrier(),
-                        reqBody.receiveTrackingNumber()
-                );
-            }
-            case INSPECTING_RENTAL -> {
-                // 대여 검수 시작
-                // (수령 대기 -> 대여 검수: 직거래)
-                // (배송 중 -> 대여 검수: 배송 완료)
-                reservation.startRentalInspection();
-            }
-            case RENTING -> {
-                // 대여 시작 (대여 검수 -> 대여 중)
-                validateGuestOnly(isGuest, "대여 시작");
-                reservation.startRenting();
-            }
+            // 추가 데이터가 필요한 경우
+            case REJECTED -> reservation.reject(reqBody.rejectReason());
+            case CANCELLED -> reservation.cancel(reqBody.cancelReason());
+            case CLAIMING -> reservation.claim(reqBody.claimReason());
+            case SHIPPING -> reservation.startShipping(
+                    reqBody.receiveCarrier(),
+                    reqBody.receiveTrackingNumber()
+            );
+            case RETURNING -> reservation.startReturning(
+                    reqBody.returnCarrier(),
+                    reqBody.returnTrackingNumber()
+            );
+            // 반납 대기
             case PENDING_RETURN -> {
-                // 반납 요청 (대여 중 -> 반납 대기)
-                reservation.requestReturn();
+                // 대여 검수 -> 반납 대기 (검수 실패)
+                if (reservation.getStatus() == ReservationStatus.INSPECTING_RENTAL) {
+                    reservation.failRentalInspection(reqBody.cancelReason());
+                } else {
+                    // 대여 중 -> 반납 대기 (정상 반납 요청)
+                    reservation.changeStatus(reqBody.status());
+                }
             }
-            case RETURNING -> {
-                // 택배 반납 시작 (반납 대기 -> 반납 중)
-                validateGuestOnly(isGuest, "반납 시작");
-                reservation.startReturning(
-                        reqBody.returnCarrier(),
-                        reqBody.returnTrackingNumber()
-                );
-            }
-            case RETURN_COMPLETED -> {
-                // 반납 완료
-                // (반납 대기 -> 반납 완료: 직거래)
-                // (반납 중 -> 반납 완료: 택배 반납 완료)
-                reservation.completeReturn();
-            }
-            case INSPECTING_RETURN -> {
-                // 반납 검수 시작 (반납 완료 -> 반납 검수)
-                validateHostOnly(isHost, "반납 검수");
-                reservation.startReturnInspection();
-            }
-            case PENDING_REFUND -> {
-                // 환급 예정 (반납 검수 -> 환급 예정)
-                validateHostOnly(isHost, "환급 예정 처리");
-                reservation.scheduleRefund();
-            }
-            case REFUND_COMPLETED -> {
-                // 환급 완료 (환급 예정 -> 환급 완료)
-                // 시스템 또는 호스트가 처리
-                reservation.completeRefund();
-            }
-            case CLAIMING -> {
-                // 청구 시작
-                // (미반납/분실 -> 청구 진행)
-                validateHostOnly(isHost, "청구 시작");
-                reservation.startClaim();
-            }
-            case CLAIM_COMPLETED -> {
-                // 청구 완료 (청구 진행 -> 청구 완료)
-                reservation.completeClaim();
-            }
-            case LOST_OR_UNRETURNED -> {
-                // 미반납/분실 처리 (대여 중 -> 미반납/분실)
-                validateHostOnly(isHost, "미반납/분실 처리");
-                reservation.markAsLost();
-            }
+
+            // 단순 상태 전환 (명시적으로 나열)
+            case PENDING_PAYMENT,
+                 PENDING_PICKUP,
+                 INSPECTING_RENTAL,
+                 RENTING,
+                 RETURN_COMPLETED,
+                 INSPECTING_RETURN,
+                 PENDING_REFUND,
+                 REFUND_COMPLETED,
+                 LOST_OR_UNRETURNED,
+                 CLAIM_COMPLETED -> reservation.changeStatus(reqBody.status());
+
+            // 지원하지 않는 상태
             default -> throw new ServiceException(HttpStatus.BAD_REQUEST, "지원하지 않는 상태 전환입니다.");
         }
+
         Reservation r = reservationRepository.save(reservation);
 
         // 상태 전환 로그 저장
@@ -419,17 +373,23 @@ public class ReservationService {
         return convertToReservationDto(r);
     }
 
-    private void validateHostOnly(boolean isHost, String action) {
-        if (!isHost) {
-            throw new ServiceException(HttpStatus.FORBIDDEN,
-                    String.format("호스트만 %s을(를) 수행할 수 있습니다.", action));
-        }
-    }
-
-    private void validateGuestOnly(boolean isGuest, String action) {
-        if (!isGuest) {
-            throw new ServiceException(HttpStatus.FORBIDDEN,
-                    String.format("게스트만 %s을(를) 수행할 수 있습니다.", action));
+    private void validateStatusTransitionPermission(ReservationStatus targetStatus, boolean isHost, boolean isGuest) {
+        switch (targetStatus.getStatusSubject()) {
+            case HOST -> {
+                if (!isHost) {
+                    throw new ServiceException(HttpStatus.FORBIDDEN,
+                            targetStatus.getDescription() + " 권한이 없습니다. (호스트만 가능)");
+                }
+            }
+            case GUEST -> {
+                if (!isGuest) {
+                    throw new ServiceException(HttpStatus.FORBIDDEN,
+                            targetStatus.getDescription() + " 권한이 없습니다. (게스트만 가능)");
+                }
+            }
+            case SYSTEM_OR_ANY -> {
+                // 시스템 또는 누구나 가능 - 권한 체크 통과
+            }
         }
     }
 

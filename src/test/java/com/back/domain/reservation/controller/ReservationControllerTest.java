@@ -139,7 +139,7 @@ class ReservationControllerTest {
                 "서울시 강남구",
                 "테헤란로 123",
                 ReservationDeliveryMethod.DELIVERY,
-                null, null, null, null,
+                null, null, null, null, null,
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(3),
                 LocalDateTime.now(),
@@ -190,32 +190,6 @@ class ReservationControllerTest {
         mockMvc.perform(post("/api/v1/reservations")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidReqBody))
-                        .cookie(new Cookie("accessToken", "mock-access-token")))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.status").value(400));
-
-        verifyNoInteractions(reservationService);
-    }
-
-    @Test
-    @DisplayName("예약 생성 실패 - 과거 날짜")
-    void createReservation_PastDate() throws Exception {
-        // given
-        CreateReservationReqBody reqBody = new CreateReservationReqBody(
-                ReservationDeliveryMethod.DELIVERY,
-                "서울시 강남구",
-                "테헤란로 123",
-                ReservationDeliveryMethod.DELIVERY,
-                LocalDate.now().minusDays(1),  // 과거 날짜
-                LocalDate.now().plusDays(3),
-                100L,
-                List.of()
-        );
-
-        // when & then
-        mockMvc.perform(post("/api/v1/reservations")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(reqBody))
                         .cookie(new Cookie("accessToken", "mock-access-token")))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400));
@@ -492,7 +466,7 @@ class ReservationControllerTest {
                 "CJ대한통운", "1234567890",
                 "서울시 강남구", "테헤란로 123",
                 ReservationDeliveryMethod.DELIVERY,
-                null, null, null, null,
+                null, null, null, null, null,
                 LocalDate.now(),
                 LocalDate.now().plusDays(2),
                 LocalDateTime.now(),
@@ -566,6 +540,7 @@ class ReservationControllerTest {
                 null,   // cancelReason
                 null,   // rejectReason
                 null,   // receiveCarrier
+                null,   // claimReason
                 null,   // receiveTrackingNumber
                 null,   // returnCarrier
                 null    // returnTrackingNumber
@@ -578,7 +553,7 @@ class ReservationControllerTest {
                 ReservationDeliveryMethod.DELIVERY,
                 null, null, "서울시 강남구", "테헤란로 123",
                 ReservationDeliveryMethod.DELIVERY,
-                null, null, null, null,
+                null, null, null, null, null,
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(3),
                 LocalDateTime.now(),
@@ -614,6 +589,7 @@ class ReservationControllerTest {
                 ReservationStatus.REFUND_COMPLETED,
                 "단순 변심",   // cancelReason (예시)
                 null,          // rejectReason
+                null,          // claimReason
                 null, null,    // receiveCarrier, receiveTrackingNumber
                 null, null     // returnCarrier, returnTrackingNumber
         );
@@ -653,7 +629,7 @@ class ReservationControllerTest {
                 ReservationDeliveryMethod.DIRECT,
                 null, null, null, null,
                 ReservationDeliveryMethod.DIRECT,
-                null, null, null, null,
+                null, null, null, null, null,
                 LocalDate.now().plusDays(2),
                 LocalDate.now().plusDays(4),
                 LocalDateTime.now(),

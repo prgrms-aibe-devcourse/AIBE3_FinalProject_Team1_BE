@@ -1,9 +1,6 @@
 package com.back.domain.chat.controller;
 
-import com.back.domain.chat.dto.ChatMessageDto;
-import com.back.domain.chat.dto.ChatRoomDto;
-import com.back.domain.chat.dto.CreateChatRoomReqBody;
-import com.back.domain.chat.dto.CreateChatRoomResBody;
+import com.back.domain.chat.dto.*;
 import com.back.domain.chat.service.ChatService;
 import com.back.global.rsData.RsData;
 import com.back.global.security.SecurityUser;
@@ -32,12 +29,12 @@ public class ChatController implements ChatApi{
     }
 
     @GetMapping
-    public ResponseEntity<RsData<PagePayload<ChatRoomDto>>> getMyChatRooms(
+    public ResponseEntity<RsData<PagePayload<ChatRoomListDto>>> getMyChatRooms(
             @PageableDefault(size = 10, page = 0) Pageable pageable,
             @RequestParam(required = false) String keyword,
             @AuthenticationPrincipal SecurityUser securityUser
     ) {
-        PagePayload<ChatRoomDto> myChatRooms = chatService.getMyChatRooms(securityUser.getId(), pageable, keyword);
+        PagePayload<ChatRoomListDto> myChatRooms = chatService.getMyChatRooms(securityUser.getId(), pageable, keyword);
         return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "내 채팅방 목록",  myChatRooms));
     }
 
@@ -58,5 +55,15 @@ public class ChatController implements ChatApi{
     ) {
         PagePayload<ChatMessageDto> chatMessages = chatService.getChatMessageList(chatRoomId, securityUser.getId(), pageable);
         return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "해당 채팅방 내 메세지 목록", chatMessages));
+    }
+
+    @PatchMapping("/{id}/read")
+    public ResponseEntity<RsData<Void>> markAsRead(
+            @PathVariable("id") Long chatRoomId,
+            @RequestParam Long lastMessageId,
+            @AuthenticationPrincipal SecurityUser securityUser
+    ) {
+        chatService.markAsRead(chatRoomId, securityUser.getId(), lastMessageId);
+        return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "읽음 처리 완료", null));
     }
 }

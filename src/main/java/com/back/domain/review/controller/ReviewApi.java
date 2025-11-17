@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 public interface ReviewApi {
     @Operation(summary = "후기 등록", description = "반납 완료된 건에 대하여 후기를 등록합니다.")
-    ResponseEntity<RsData<Void>> write(
+    ResponseEntity<RsData<ReviewDto>> write(
             @PathVariable Long reservationId,
             @Valid @RequestBody ReviewWriteReqBody reqBody,
             @AuthenticationPrincipal SecurityUser securityUser

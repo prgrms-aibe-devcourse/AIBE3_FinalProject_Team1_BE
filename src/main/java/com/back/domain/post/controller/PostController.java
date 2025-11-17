@@ -2,6 +2,7 @@ package com.back.domain.post.controller;
 
 import com.back.domain.post.dto.req.PostCreateReqBody;
 import com.back.domain.post.dto.req.PostUpdateReqBody;
+import com.back.domain.post.dto.res.PostCreateResBody;
 import com.back.domain.post.dto.res.PostDetailResBody;
 import com.back.domain.post.dto.res.PostListResBody;
 import com.back.domain.post.service.PostService;
@@ -31,12 +32,12 @@ public class PostController implements PostApi {
     private final ReviewSummaryService reviewSummaryService;
 
     @PostMapping
-    public ResponseEntity<RsData<Long>> createPost(
+    public ResponseEntity<RsData<PostCreateResBody>> createPost(
             @Valid @RequestBody PostCreateReqBody reqBody,
             @AuthenticationPrincipal SecurityUser user) {
-        Long postId = this.postService.createPost(reqBody, user.getId());
+        PostCreateResBody body = this.postService.createPost(reqBody, user.getId());
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(new RsData<>(HttpStatus.CREATED, "게시글이 생성되었습니다.", postId));
+        return ResponseEntity.status(HttpStatus.CREATED).body(new RsData<>(HttpStatus.CREATED, "게시글이 생성되었습니다.", body));
     }
 
     @GetMapping

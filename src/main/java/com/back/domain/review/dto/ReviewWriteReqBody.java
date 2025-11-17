@@ -7,15 +7,15 @@ import jakarta.validation.constraints.NotNull;
 
 public record ReviewWriteReqBody(
         @NotNull
-        @Min(0)
+        @Min(1)
         @Max(5)
         int equipmentScore,
         @NotNull
-        @Min(0)
+        @Min(1)
         @Max(5)
         int kindnessScore,
         @NotNull
-        @Min(0)
+        @Min(1)
         @Max(5)
         int responseTimeScore,
         @NotBlank

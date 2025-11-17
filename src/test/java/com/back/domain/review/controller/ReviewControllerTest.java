@@ -12,6 +12,7 @@ import com.back.domain.review.dto.ReviewDto;
 import com.back.domain.review.dto.ReviewWriteReqBody;
 import com.back.domain.review.entity.Review;
 import com.back.domain.review.service.ReviewService;
+import com.back.global.exception.ServiceException;
 import com.back.global.security.SecurityUser;
 import com.back.global.web.CookieHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,6 +26,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
@@ -143,8 +145,9 @@ class ReviewControllerTest {
 
         String jsonRequest = objectMapper.writeValueAsString(reqBody);
 
-        doNothing().when(reviewService)
-                .writeReview(eq(1L), any(ReviewWriteReqBody.class), eq(testUser.getId()));
+        // Review 객체 반환하도록 모킹 (void가 아님!)
+        when(reviewService.writeReview(eq(1L), any(ReviewWriteReqBody.class), eq(testUser.getId())))
+                .thenReturn(testReview);  // 👈 수정
 
         // when & then
         mockMvc.perform(post("/api/v1/reviews/{reservationId}", 1L)
@@ -154,7 +157,13 @@ class ReviewControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value(201))
                 .andExpect(jsonPath("$.msg").value("리뷰가 작성되었습니다."))
-                .andExpect(jsonPath("$.data").doesNotExist()); // Void이므로 data 없음
+                .andExpect(jsonPath("$.data.id").value(1))  // 👈 추가
+                .andExpect(jsonPath("$.data.equipmentScore").value(4))  // 👈 추가
+                .andExpect(jsonPath("$.data.kindnessScore").value(5))  // 👈 추가
+                .andExpect(jsonPath("$.data.responseTimeScore").value(3))  // 👈 추가
+                .andExpect(jsonPath("$.data.comment").value("좋은 서비스였습니다."))  // 👈 추가
+                .andExpect(jsonPath("$.data.author.id").value(testUser.getId()))  // 👈 추가
+                .andExpect(jsonPath("$.data.author.nickname").value(testUser.getNickname()));  // 👈 추가
 
         verify(reviewService).writeReview(eq(1L), any(ReviewWriteReqBody.class), eq(testUser.getId()));
     }
@@ -295,5 +304,195 @@ class ReviewControllerTest {
                 .andExpect(jsonPath("$.data.page.size").value(30))
                 .andExpect(jsonPath("$.data.page.totalElements").value(1))
                 .andExpect(jsonPath("$.data.page.totalPages").value(1));
+    }
+
+    @Test
+    void writeReview_ReservationNotFound() throws Exception {
+        // given
+        ReviewWriteReqBody reqBody = new ReviewWriteReqBody(
+                4, 5, 3, "좋은 서비스였습니다."
+        );
+
+        String jsonRequest = objectMapper.writeValueAsString(reqBody);
+
+        when(reviewService.writeReview(eq(999L), any(ReviewWriteReqBody.class), eq(testUser.getId())))
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "존재하지 않는 예약입니다."));
+
+        // when & then
+        mockMvc.perform(post("/api/v1/reviews/{reservationId}", 999L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonRequest)
+                        .cookie(new Cookie("accessToken", "mock-access-token")))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.msg").value("존재하지 않는 예약입니다."));
+    }
+
+    @Test
+    void writeReview_AlreadyExists() throws Exception {
+        // given
+        ReviewWriteReqBody reqBody = new ReviewWriteReqBody(
+                4, 5, 3, "좋은 서비스였습니다."
+        );
+
+        String jsonRequest = objectMapper.writeValueAsString(reqBody);
+
+        when(reviewService.writeReview(eq(1L), any(ReviewWriteReqBody.class), eq(testUser.getId())))
+                .thenThrow(new ServiceException(HttpStatus.CONFLICT, "이미 리뷰를 작성하셨습니다."));
+
+        // when & then
+        mockMvc.perform(post("/api/v1/reviews/{reservationId}", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonRequest)
+                        .cookie(new Cookie("accessToken", "mock-access-token")))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.msg").value("이미 리뷰를 작성하셨습니다."));
+    }
+
+    @Test
+    void writeReview_NotOwner() throws Exception {
+        // given
+        ReviewWriteReqBody reqBody = new ReviewWriteReqBody(
+                4, 5, 3, "좋은 서비스였습니다."
+        );
+
+        String jsonRequest = objectMapper.writeValueAsString(reqBody);
+
+        when(reviewService.writeReview(eq(1L), any(ReviewWriteReqBody.class), eq(testUser.getId())))
+                .thenThrow(new ServiceException(HttpStatus.FORBIDDEN, "본인의 예약에만 리뷰를 작성할 수 있습니다."));
+
+        // when & then
+        mockMvc.perform(post("/api/v1/reviews/{reservationId}", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonRequest)
+                        .cookie(new Cookie("accessToken", "mock-access-token")))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.msg").value("본인의 예약에만 리뷰를 작성할 수 있습니다."));
+    }
+
+    @Test
+    void writeReview_ReservationNotCompleted() throws Exception {
+        // given
+        ReviewWriteReqBody reqBody = new ReviewWriteReqBody(
+                4, 5, 3, "좋은 서비스였습니다."
+        );
+
+        String jsonRequest = objectMapper.writeValueAsString(reqBody);
+
+        when(reviewService.writeReview(eq(1L), any(ReviewWriteReqBody.class), eq(testUser.getId())))
+                .thenThrow(new ServiceException(HttpStatus.BAD_REQUEST, "반납 완료된 예약만 리뷰를 작성할 수 있습니다."));
+
+        // when & then
+        mockMvc.perform(post("/api/v1/reviews/{reservationId}", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonRequest)
+                        .cookie(new Cookie("accessToken", "mock-access-token")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.msg").value("반납 완료된 예약만 리뷰를 작성할 수 있습니다."));
+    }
+
+    @Test
+    void writeReview_ScoreBoundary() throws Exception {
+        // given - 점수 경계값 테스트 (0점)
+        String invalidJsonRequest = """
+    {
+        "equipmentScore": 0,
+        "kindnessScore": 5,
+        "responseTimeScore": 5,
+        "comment": "테스트"
+    }
+    """;
+
+        // when & then
+        mockMvc.perform(post("/api/v1/reviews/{reservationId}", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(invalidJsonRequest)
+                        .cookie(new Cookie("accessToken", "mock-access-token")))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void writeReview_EmptyComment() throws Exception {
+        // given - 빈 코멘트
+        ReviewWriteReqBody reqBody = new ReviewWriteReqBody(
+                4, 5, 3, ""
+        );
+
+        String jsonRequest = objectMapper.writeValueAsString(reqBody);
+
+        // when & then
+        mockMvc.perform(post("/api/v1/reviews/{reservationId}", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonRequest)
+                        .cookie(new Cookie("accessToken", "mock-access-token")))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    void getPostReviews_EmptyPage() throws Exception {
+        // given - 빈 페이지
+        Page<ReviewDto> emptyPage = new PageImpl<>(
+                Collections.emptyList(),
+                PageRequest.of(0, 30),
+                0
+        );
+
+        when(reviewService.getPostReviews(any(Pageable.class), eq(1L)))
+                .thenReturn(emptyPage);
+
+        // when & then
+        mockMvc.perform(get("/api/v1/posts/{postId}/reviews", 1L)
+                        .with(user(testUser)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isEmpty())
+                .andExpect(jsonPath("$.data.page.totalElements").value(0));
+    }
+
+    @Test
+    @WithMockUser
+    void getPostReviews_WithPagination() throws Exception {
+        // given - 여러 페이지
+        List<ReviewDto> reviews = List.of(
+                new ReviewDto(1L, 4, 5, 3, "리뷰1", LocalDateTime.now(),
+                        new ReviewAuthorDto(1L, "닉네임1", "profile1.jpg")),
+                new ReviewDto(2L, 5, 4, 5, "리뷰2", LocalDateTime.now(),
+                        new ReviewAuthorDto(2L, "닉네임2", "profile2.jpg"))
+        );
+
+        Page<ReviewDto> reviewPage = new PageImpl<>(
+                reviews,
+                PageRequest.of(1, 30),
+                100  // 총 100개
+        );
+
+        when(reviewService.getPostReviews(any(Pageable.class), eq(1L)))
+                .thenReturn(reviewPage);
+
+        // when & then
+        mockMvc.perform(get("/api/v1/posts/{postId}/reviews", 1L)
+                        .param("page", "1")
+                        .param("size", "30")
+                        .with(user(testUser)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content.length()").value(2))
+                .andExpect(jsonPath("$.data.page.totalElements").value(100))
+                .andExpect(jsonPath("$.data.page.totalPages").value(4))
+                .andExpect(jsonPath("$.data.page.hasPrevious").value(true))
+                .andExpect(jsonPath("$.data.page.hasNext").value(true));
+    }
+
+    @Test
+    @WithMockUser
+    void getMemberReviews_NotFound() throws Exception {
+        // given
+        when(reviewService.getMemberReviews(any(Pageable.class), eq(999L)))
+                .thenThrow(new ServiceException(HttpStatus.NOT_FOUND, "존재하지 않는 회원입니다."));
+
+        // when & then
+        mockMvc.perform(get("/api/v1/members/{memberId}/reviews", 999L)
+                        .with(user(testUser)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.msg").value("존재하지 않는 회원입니다."));
     }
 }

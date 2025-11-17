@@ -6,6 +6,7 @@ import com.back.domain.member.entity.Member;
 import com.back.domain.member.repository.MemberRepository;
 import com.back.domain.post.dto.req.PostCreateReqBody;
 import com.back.domain.post.dto.req.PostUpdateReqBody;
+import com.back.domain.post.dto.res.PostCreateResBody;
 import com.back.domain.post.dto.res.PostDetailResBody;
 import com.back.domain.post.dto.res.PostListResBody;
 import com.back.domain.post.entity.*;
@@ -37,7 +38,7 @@ public class PostService {
     private final RegionRepository regionRepository;
     private final CategoryRepository categoryRepository;
 
-    public Long createPost(PostCreateReqBody reqBody, Long memberId) {
+    public PostCreateResBody createPost(PostCreateReqBody reqBody, Long memberId) {
 
         Member author = this.memberRepository.findById(memberId).orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, "존재하지 않는 회원입니다."));
 
@@ -66,7 +67,8 @@ public class PostService {
         post.getPostRegions().addAll(postRegions);
 
         this.postRepository.save(post);
-        return post.getId();
+
+        return PostCreateResBody.of(post);
     }
 
     public PagePayload<PostListResBody> getPostList(Pageable pageable, String keyword, Long categoryId, List<Long> regionIds, Long memberId) {

@@ -44,7 +44,8 @@ public class SecurityConfig {
             "/v3/api-docs", "/v3/api-docs/**", // Swagger OpenApi JSON 문서
             "/h2-console/**",          // H2 콘솔 (개발용)
             "/actuator/health", "/actuator/health/**", "/actuator/info",    // Spring Actuator
-            "/api/actuator/health", "/api/actuator/health/**", "/api/actuator/info"
+            "/api/actuator/health", "/api/actuator/health/**", "/api/actuator/info",
+            "/ws-chat/**"
     };
 
     @Bean
@@ -54,11 +55,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(
                 auth -> auth
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.GET,"/api/v1/posts", "/api/v1/posts/**").permitAll()
                         .requestMatchers(HttpMethod.GET,"/api/v1/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET,"/api/v1/regions/**").permitAll()
-                        .requestMatchers("api/v1/notifications/**").authenticated()
-                        .requestMatchers("/api/v1/reservations/**").authenticated() // 로그인 한 사용자만 예약 기능 접근 가능
                         .requestMatchers("/api/v1/adm/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )

@@ -2,6 +2,7 @@ package com.back.domain.review.controller;
 
 import com.back.domain.review.dto.ReviewDto;
 import com.back.domain.review.dto.ReviewWriteReqBody;
+import com.back.domain.review.entity.Review;
 import com.back.domain.review.service.ReviewService;
 import com.back.global.rsData.RsData;
 import com.back.global.security.SecurityUser;
@@ -26,13 +27,13 @@ public class ReviewController implements ReviewApi {
     private final ReviewService reviewService;
 
     @PostMapping("/api/v1/reviews/{reservationId}")
-    public ResponseEntity<RsData<Void>> write(
+    public ResponseEntity<RsData<ReviewDto>> write(
             @PathVariable Long reservationId,
             @Valid @RequestBody ReviewWriteReqBody reqBody,
             @AuthenticationPrincipal SecurityUser securityUser
     ) {
-        reviewService.writeReview(reservationId, reqBody, securityUser.getId());
-        RsData<Void> body = new RsData<>(HttpStatus.CREATED, "리뷰가 작성되었습니다.");
+        Review review  = reviewService.writeReview(reservationId, reqBody, securityUser.getId());
+        RsData<ReviewDto> body = new RsData<>(HttpStatus.CREATED, "리뷰가 작성되었습니다.", new ReviewDto(review, securityUser));
         return ResponseEntity.status(HttpStatus.CREATED).body(body);
     }
 
