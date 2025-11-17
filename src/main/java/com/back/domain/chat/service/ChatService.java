@@ -28,12 +28,15 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ChatService {
+
+    private final ChatWebsocketService chatWebsocketService;
     private final MemberRepository memberRepository;
     private final PostRepository postRepository;
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatQueryRepository chatQueryRepository;
     private final RedisTemplate<String, String> redisTemplate;
+
 
     @Transactional
     public CreateChatRoomResBody createOrGetChatRoom(Long postId, Long memberId) {
@@ -54,6 +57,27 @@ public class ChatService {
         ChatRoom chatRoom = ChatRoom.create(post, host, guest);
 
         chatRoomRepository.save(chatRoom);
+
+        OtherMemberDto otherMemberDto = new OtherMemberDto(
+                guest.getId(),
+                guest.getNickname(),
+                guest.getProfileImgUrl()
+        );
+
+        NewRoomNotiDto newRoom = new NewRoomNotiDto(
+                chatRoom.getId(),
+                chatRoom.getCreatedAt(),
+                new ChatPostDto(post.getTitle()),
+                otherMemberDto,
+                null,
+                null,
+                0L
+        );
+
+        chatWebsocketService.notify(
+                host.getId(),
+                new ChatNotiDto("NEW_ROOM", newRoom)
+        );
 
         return new CreateChatRoomResBody("채팅방이 생성되었습니다.", chatRoom.getId());
     }
@@ -126,7 +150,7 @@ public class ChatService {
     }
 
     @Transactional
-    public ChatMessageDto saveMessage(Long chatRoomId, SendChatMessageDto body, Long memberId) {
+    public void saveMessage(Long chatRoomId, SendChatMessageDto body, Long memberId) {
         String content = body.content();
 
         ChatMember chatMember = chatQueryRepository.findChatMember(chatRoomId, memberId)
@@ -137,19 +161,27 @@ public class ChatService {
         chatMessageRepository.save(chatMessage);
 
         Long otherMemberId = chatQueryRepository.findOtherMemberId(chatRoomId, memberId)
-                        .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, "채팅 상대를 찾을 수 없습니다."));
+                .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, "채팅 상대를 찾을 수 없습니다."));
 
         String key = "unread:" + otherMemberId + ":" + chatRoomId;
         redisTemplate.opsForValue().increment(key);
 
         chatMember.getChatRoom().updateLastMessage(chatMessage.getContent(), chatMessage.getCreatedAt());
 
-        return new ChatMessageDto(
+        ChatMessageDto chatMessageDto = new ChatMessageDto(
                 chatMessage.getId(),
                 memberId,
                 chatMessage.getContent(),
                 chatMessage.getCreatedAt()
         );
+
+        chatWebsocketService.broadcastMessage(chatRoomId, chatMessageDto);
+
+        chatWebsocketService.notify(
+                otherMemberId,
+                new ChatNotiDto("NEW_MESSAGE", NewMessageNotiDto.from(chatRoomId, chatMessageDto))
+        );
+
     }
 
     @Transactional
