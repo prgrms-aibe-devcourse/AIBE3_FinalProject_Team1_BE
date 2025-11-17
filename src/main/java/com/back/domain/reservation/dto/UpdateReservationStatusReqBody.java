@@ -8,6 +8,7 @@ public record UpdateReservationStatusReqBody(
         ReservationStatus status,
         String cancelReason,
         String rejectReason,
+        String claimReason,
         String receiveCarrier,
         String receiveTrackingNumber,
         String returnCarrier,
