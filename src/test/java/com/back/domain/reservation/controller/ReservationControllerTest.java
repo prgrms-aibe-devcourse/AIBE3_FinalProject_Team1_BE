@@ -566,6 +566,7 @@ class ReservationControllerTest {
                 null,   // cancelReason
                 null,   // rejectReason
                 null,   // receiveCarrier
+                null,   // claimReason
                 null,   // receiveTrackingNumber
                 null,   // returnCarrier
                 null    // returnTrackingNumber
@@ -614,6 +615,7 @@ class ReservationControllerTest {
                 ReservationStatus.REFUND_COMPLETED,
                 "단순 변심",   // cancelReason (예시)
                 null,          // rejectReason
+                null,          // claimReason
                 null, null,    // receiveCarrier, receiveTrackingNumber
                 null, null     // returnCarrier, returnTrackingNumber
         );
