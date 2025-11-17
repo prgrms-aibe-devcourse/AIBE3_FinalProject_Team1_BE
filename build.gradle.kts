@@ -7,6 +7,7 @@ plugins {
     id("io.spring.dependency-management") version "1.1.7"
     jacoco
 }
+val springAiVersion by extra("1.0.3")
 
 group = "com"
 version = "0.0.1-SNAPSHOT"
@@ -33,6 +34,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("org.springframework.ai:spring-ai-starter-model-openai")
     compileOnly("org.projectlombok:lombok")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     annotationProcessor("org.projectlombok:lombok")
@@ -115,5 +117,10 @@ tasks.register<JacocoCoverageVerification>("jacocoVerify") {
         rule {
             limit { minimum = "0.60".toBigDecimal() } // 60%
         }
+    }
+}
+dependencyManagement {
+    imports {
+        mavenBom("org.springframework.ai:spring-ai-bom:$springAiVersion")
     }
 }
