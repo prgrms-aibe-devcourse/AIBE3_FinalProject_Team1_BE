@@ -339,7 +339,7 @@ networks:
     external: true
 COMPOSE_EOF
 
-# 무중단 배포 스크립트 생성 (deploy.sh)
+# 무중단 배포 스크립트 생성 (deploy.sh) - 완전 자동화 버전
 cat > /home/ec2-user/app/deploy.sh <<'DEPLOY_EOF'
 #!/bin/bash
 set -e
@@ -349,16 +349,14 @@ echo "Starting Blue-Green Deployment..."
 echo "=========================================="
 
 cd /home/ec2-user/app
-
-# 환경변수 로드
 source /etc/environment
 
 # GitHub Container Registry 로그인
-echo "$GITHUB_ACCESS_TOKEN_1" |
-docker login ghcr.io -u $GITHUB_ACCESS_TOKEN_1_OWNER --password-stdin
+echo "$GITHUB_ACCESS_TOKEN_1" | docker login ghcr.io -u $GITHUB_ACCESS_TOKEN_1_OWNER --password-stdin
 
 # 최신 이미지 Pull
 echo "Pulling latest image..."
+docker rmi ghcr.io/$GITHUB_ACCESS_TOKEN_1_OWNER/chwimeet-backend:latest || true
 docker pull ghcr.io/$GITHUB_ACCESS_TOKEN_1_OWNER/chwimeet-backend:latest
 
 # 현재 실행 중인 컨테이너 확인
@@ -374,53 +372,62 @@ else
   NEW_PORT=8080
 fi
 
-echo "Current container: $CURRENT_CONTAINER (port $CURRENT_PORT)"
-echo "New container: $NEW_CONTAINER (port $NEW_PORT)"
+echo "Current: $CURRENT_CONTAINER (port $CURRENT_PORT)"
+echo "New: $NEW_CONTAINER (port $NEW_PORT)"
 
 # 새 컨테이너 시작
 echo "Starting new container: $NEW_CONTAINER..."
-if [ "$NEW_CONTAINER" = "team1-app-002" ];
-then
+if [ "$NEW_CONTAINER" = "team1-app-002" ]; then
   docker-compose --profile blue-green up -d $NEW_CONTAINER
 else
   docker-compose up -d $NEW_CONTAINER
 fi
 
 # Health check
-echo "Waiting for health check..."
+echo "Running health checks..."
 MAX_RETRIES=30
 RETRY_COUNT=0
 
-while [ $RETRY_COUNT -lt $MAX_RETRIES ];
-do
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
   if curl -f http://localhost:$NEW_PORT/actuator/health > /dev/null 2>&1; then
-    echo "✅ Health check passed!"
+    echo "Health check passed!"
     break
   fi
-  echo "⏳ Health check failed. Retrying in 5 seconds... ($((RETRY_COUNT+1))/$MAX_RETRIES)"
+  echo "Waiting for health check... ($((RETRY_COUNT+1))/$MAX_RETRIES)"
   sleep 5
   RETRY_COUNT=$((RETRY_COUNT+1))
 done
 
-if [ $RETRY_COUNT -eq $MAX_RETRIES ];
-then
-  echo "❌ Health check failed after $MAX_RETRIES attempts. Rolling back..."
+if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+  echo "Health check failed! Rolling back..."
   docker-compose stop $NEW_CONTAINER
   docker-compose rm -f $NEW_CONTAINER
   exit 1
 fi
 
+# Nginx 자동 전환 (docker exec로 직접 업데이트)
+echo "Switching Nginx to new container..."
+
+# Nginx Proxy Manager 컨테이너에서 직접 DB 업데이트
+docker exec npm_1 sqlite3 /data/database.sqlite \
+  "UPDATE proxy_host SET forward_host = '$NEW_CONTAINER' WHERE domain_names LIKE '%${var.app_1_domain}%';" || {
+  echo "Warning: Nginx auto-switch failed. Manual switch required."
+}
+
+# Nginx 리로드
+docker exec npm_1 nginx -s reload || true
+
+# 구 컨테이너 정리 (30초 대기 후)
+echo "Waiting 30 seconds before removing old container..."
+sleep 30
+
+echo "Removing old container: $CURRENT_CONTAINER"
+docker-compose stop $CURRENT_CONTAINER || true
+docker-compose rm -f $CURRENT_CONTAINER || true
+
 echo "=========================================="
-echo "✅ New container is healthy!"
-echo "=========================================="
-echo ""
-echo "📋 Next steps:"
-echo "1. Update Nginx Proxy Manager to point to: http://team1-app-$NEW_PORT:8080"
-echo ""
-echo "2. After confirming the switch works, stop the old container:"
-echo "   docker-compose stop $CURRENT_CONTAINER"
-echo "   docker-compose rm -f $CURRENT_CONTAINER"
-echo ""
+echo "Deployment Completed!"
+echo "Active container: $NEW_CONTAINER"
 echo "=========================================="
 
 DEPLOY_EOF

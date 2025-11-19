@@ -270,14 +270,19 @@ jobs:
         if: success()
         run: |
           echo "=========================================="
-          echo "🎉 Fully Automated Deployment Summary"
+          echo "🎉 Deployment Summary"
           echo "=========================================="
           echo "✅ Blue-Green deployment completed"
-          echo "✅ Nginx traffic switched automatically"
-          echo "✅ Old container removed"
           echo "📦 Image: ${{ needs.build-and-push.outputs.image-tag }}"
           echo "🖥️  Instance: ${{ env.INSTANCE_ID }}"
           echo "🌐 URL: https://${{ vars.APP_DOMAIN }}"
+          echo ""
+          echo "⚠️  Manual Steps Required:"
+          echo "1. Login to Nginx Proxy Manager (http://your-ip:81)"
+          echo "2. Update Forward Hostname/IP to new container"
+          echo "3. SSH and remove old container:"
+          echo "   docker-compose stop [old-container]"
+          echo "   docker-compose rm -f [old-container]"
           echo "=========================================="
 
       - name: Deployment Failed
