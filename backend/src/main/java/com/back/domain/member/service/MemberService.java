@@ -6,11 +6,13 @@ import com.back.domain.member.dto.MemberUpdateReqBody;
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.repository.MemberRepository;
 import com.back.global.exception.ServiceException;
+import com.back.global.s3.S3Uploader;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Optional;
 
@@ -19,6 +21,7 @@ import java.util.Optional;
 public class MemberService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
+    private final S3Uploader s3;
 
     public long count() {
         return memberRepository.count();
@@ -50,10 +53,16 @@ public class MemberService {
         }
     }
 
-    public Member updateMember(Long memberId, MemberUpdateReqBody reqBody) {
-        // TODO: 이미지 업데이트 기능 추가
+    public Member updateMember(Long memberId, MemberUpdateReqBody reqBody, MultipartFile profileImage) {
         Member member = getById(memberId);
         member.updateMember(reqBody);
+
+        // 프로필 이미지 등록
+        if (profileImage != null && !profileImage.isEmpty()) {
+            String profileImgUrl = s3.upload(profileImage);
+            member.updateProfileImage(profileImgUrl);
+        }
+
         return memberRepository.save(member);
     }
 }

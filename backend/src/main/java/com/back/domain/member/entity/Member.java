@@ -76,4 +76,8 @@ public class Member extends BaseEntity {
         this.nickname = reqBody.nickname();
         this.phoneNumber = reqBody.phoneNumber();
     }
+
+    public void updateProfileImage(String profileImgUrl) {
+        this.profileImgUrl = profileImgUrl;
+    }
 }
