@@ -25,9 +25,10 @@ public record PostDetailResBody(
         LocalDateTime modifiedAt,
         PostAuthorDto author,
         Boolean isFavorite,
-        Boolean isBanned
+        Boolean isBanned,
+        List<LocalDateTime> reservedDates
 ) {
-    public static PostDetailResBody of(Post post, boolean isFavorite) {
+    public static PostDetailResBody of(Post post, boolean isFavorite, List<LocalDateTime> reservedDates) {
 
         List<Long> regionIds = post.getPostRegions().stream()
                 .map(r -> r.getRegion().getId())
@@ -59,7 +60,8 @@ public record PostDetailResBody(
                 post.getModifiedAt(),
                 PostAuthorDto.from(post.getAuthor()),
                 isFavorite,
-                post.getIsBanned()
+                post.getIsBanned(),
+                reservedDates
         );
     }
 }

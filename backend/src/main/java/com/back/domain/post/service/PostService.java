@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -128,7 +129,9 @@ public class PostService {
 
         boolean isFavorite = this.postFavoriteRepository.findByMemberIdAndPostId(memberId, postId).isPresent();
 
-        return PostDetailResBody.of(post, isFavorite);
+        List<LocalDateTime> reservedDates = postQueryRepository.findReservedDatesFromToday(postId);
+
+        return PostDetailResBody.of(post, isFavorite, reservedDates);
     }
 
     public PagePayload<PostListResBody> getMyPosts(Long memberId, Pageable pageable) {
