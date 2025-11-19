@@ -128,7 +128,7 @@ jobs:
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     # 🔥 여기서 build-and-push의 backend 디렉토리 기본값을 덮어씀
     defaults:
@@ -157,23 +157,254 @@ jobs:
         id: get_instance_id
         env:
           EC2_INSTANCE_TAG_NAME: team1-backend
-        shell: bash
         run: |
           set -e
           
           echo "🔍 Finding EC2 instance with tag Name=${EC2_INSTANCE_TAG_NAME}"
           
           INSTANCE_ID=$(aws ec2 describe-instances \
-            --filters "Name=tag:Name,Values=${EC2_INSTANCE_TAG_NAME}" "Name=instance-state-name,Values=running" \
-            --query "Reservations[].Instances[].InstanceId" --output text)
-          
-          echo "INSTANCE_ID raw: '${INSTANCE_ID}'"
+            --filters "Name=tag:Name,Values=${EC2_INSTANCE_TAG_NAME}" \
+                      "Name=instance-state-name,Values=running" \
+            --query "Reservations[].Instances[].InstanceId" \
+            --output text)
           
           # ✅ 여기서 안전하게 검증 (괄호/복잡한 문법 없이)
           if [ -z "${INSTANCE_ID}" ] || [ "${INSTANCE_ID}" = "None" ]; then
-            echo "No running instance found"
+            echo "❌ No running instance found"
             exit 1
           fi
           
           echo "✅ Found instance: ${INSTANCE_ID}"
           echo "INSTANCE_ID=${INSTANCE_ID}" >> "${GITHUB_ENV}"
+
+      # ========================================
+      # 완전 자동화된 Blue-Green 배포
+      # Nginx 자동 전환 + 구 컨테이너 정리 포함
+      # ========================================
+      - name: Fully Automated Blue-Green Deployment
+        id: deploy
+        env:
+          NPM_EMAIL: ${{ secrets.NPM_ADMIN_EMAIL }}
+          NPM_PASSWORD: ${{ secrets.NPM_ADMIN_PASSWORD }}
+          APP_DOMAIN: ${{ vars.APP_DOMAIN }}
+        run: |
+          set -e
+          
+          echo "=========================================="
+          echo "🚀 Starting Fully Automated Blue-Green Deployment"
+          echo "=========================================="
+          
+          # SSM을 통해 배포 스크립트 실행
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids ${{ env.INSTANCE_ID }} \
+            --document-name "AWS-RunShellScript" \
+            --comment "Fully automated Blue-Green deployment" \
+            --timeout-seconds 600 \
+            --parameters commands='[
+              "#!/bin/bash",
+              "set -e",
+              "",
+              "echo \"========================================\"",
+              "echo \"🔵🟢 Blue-Green Deployment - Full Auto\"",
+              "echo \"========================================\"",
+              "",
+              "cd /home/ec2-user/app",
+              "",
+              "# 환경변수 로드",
+              "source /etc/environment",
+              "",
+              "# 1. Docker 로그인 & 이미지 Pull",
+              "echo \"📦 Pulling latest image...\"",
+              "echo \"$GITHUB_ACCESS_TOKEN_1\" | docker login ghcr.io -u $GITHUB_ACCESS_TOKEN_1_OWNER --password-stdin",
+              "docker pull ghcr.io/$GITHUB_ACCESS_TOKEN_1_OWNER/chwimeet-backend:latest",
+              "",
+              "# 2. 현재 컨테이너 확인",
+              "if docker ps | grep -q team1-app-001; then",
+              "  CURRENT_CONTAINER=\"team1-app-001\"",
+              "  NEW_CONTAINER=\"team1-app-002\"",
+              "  CURRENT_PORT=8080",
+              "  NEW_PORT=8081",
+              "else",
+              "  CURRENT_CONTAINER=\"team1-app-002\"",
+              "  NEW_CONTAINER=\"team1-app-001\"",
+              "  CURRENT_PORT=8081",
+              "  NEW_PORT=8080",
+              "fi",
+              "",
+              "echo \"📍 Current: $CURRENT_CONTAINER (port $CURRENT_PORT)\"",
+              "echo \"📍 New: $NEW_CONTAINER (port $NEW_PORT)\"",
+              "",
+              "# 3. 새 컨테이너 시작",
+              "echo \"🚀 Starting new container: $NEW_CONTAINER...\"",
+              "if [ \"$NEW_CONTAINER\" = \"team1-app-002\" ]; then",
+              "  docker-compose --profile blue-green up -d $NEW_CONTAINER",
+              "else",
+              "  docker-compose up -d $NEW_CONTAINER",
+              "fi",
+              "",
+              "# 4. Health Check",
+              "echo \"🏥 Running health checks...\"",
+              "MAX_RETRIES=30",
+              "RETRY_COUNT=0",
+              "",
+              "while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do",
+              "  if curl -f http://localhost:$NEW_PORT/actuator/health > /dev/null 2>&1; then",
+              "    echo \"✅ Health check passed!\"",
+              "    break",
+              "  fi",
+              "  echo \"⏳ Waiting... ($((RETRY_COUNT+1))/$MAX_RETRIES)\"",
+              "  sleep 5",
+              "  RETRY_COUNT=$((RETRY_COUNT+1))",
+              "done",
+              "",
+              "if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then",
+              "  echo \"❌ Health check failed! Rolling back...\"",
+              "  docker-compose stop $NEW_CONTAINER",
+              "  docker-compose rm -f $NEW_CONTAINER",
+              "  exit 1",
+              "fi",
+              "",
+              "# 5. Nginx Proxy Manager API를 통한 자동 전환",
+              "echo \"🔄 Switching Nginx traffic to new container...\"",
+              "",
+              "# NPM API 토큰 획득",
+              "NPM_TOKEN=$(curl -s -X POST http://localhost:81/api/tokens \\",
+              "  -H \"Content-Type: application/json\" \\",
+              "  -d \"{\\\"identity\\\":\\\"'"$NPM_EMAIL"'\\\"",",\\\"secret\\\":\\\"'"$NPM_PASSWORD"'\\\"}\" \\",
+              "  | jq -r \".token\")",
+              "",
+              "if [ -z \"$NPM_TOKEN\" ] || [ \"$NPM_TOKEN\" = \"null\" ]; then",
+              "  echo \"⚠️  Failed to get NPM token. Manual switch required.\"",
+              "else",
+              "  # Proxy Host 목록 가져오기",
+              "  PROXY_HOSTS=$(curl -s -X GET http://localhost:81/api/nginx/proxy-hosts \\",
+              "    -H \"Authorization: Bearer $NPM_TOKEN\")",
+              "  ",
+              "  # APP_DOMAIN에 해당하는 Proxy Host ID 찾기",
+              "  PROXY_HOST_ID=$(echo \"$PROXY_HOSTS\" | jq -r \".[] | select(.domain_names[] | contains(\\\"'"$APP_DOMAIN"'\\\"")) | .id\")",
+              "  ",
+              "  if [ ! -z \"$PROXY_HOST_ID\" ] && [ \"$PROXY_HOST_ID\" != \"null\" ]; then",
+              "    # 기존 설정 가져오기",
+              "    PROXY_CONFIG=$(curl -s -X GET http://localhost:81/api/nginx/proxy-hosts/$PROXY_HOST_ID \\",
+              "      -H \"Authorization: Bearer $NPM_TOKEN\")",
+              "    ",
+              "    # forward_host를 새 컨테이너로 업데이트",
+              "    UPDATED_CONFIG=$(echo \"$PROXY_CONFIG\" | jq \".forward_host = \\\"$NEW_CONTAINER\\\"\")",
+              "    ",
+              "    # 업데이트 적용",
+              "    curl -s -X PUT http://localhost:81/api/nginx/proxy-hosts/$PROXY_HOST_ID \\",
+              "      -H \"Authorization: Bearer $NPM_TOKEN\" \\",
+              "      -H \"Content-Type: application/json\" \\",
+              "      -d \"$UPDATED_CONFIG\" > /dev/null",
+              "    ",
+              "    echo \"✅ Nginx successfully switched to $NEW_CONTAINER\"",
+              "    ",
+              "    # 6. 잠시 대기 후 구 컨테이너 정리",
+              "    echo \"⏳ Waiting 30 seconds before removing old container...\"",
+              "    sleep 30",
+              "    ",
+              "    echo \"🧹 Removing old container: $CURRENT_CONTAINER\"",
+              "    docker-compose stop $CURRENT_CONTAINER",
+              "    docker-compose rm -f $CURRENT_CONTAINER",
+              "    ",
+              "    echo \"✅ Old container removed successfully\"",
+              "  else",
+              "    echo \"⚠️  Proxy host not found. Manual switch required.\"",
+              "  fi",
+              "fi",
+              "",
+              "echo \"\"",
+              "echo \"========================================\"",
+              "echo \"🎉 Deployment Completed!\"",
+              "echo \"========================================\"",
+              "echo \"✅ Active Container: $NEW_CONTAINER (port $NEW_PORT)\"",
+              "echo \"🌐 URL: https://'"$APP_DOMAIN"'\"",
+              "echo \"========================================\""
+            ]' \
+            --output text \
+            --query 'Command.CommandId')
+          
+          echo "📤 Command ID: ${COMMAND_ID}"
+          echo "COMMAND_ID=${COMMAND_ID}" >> "${GITHUB_ENV}"
+          
+          # 명령 실행 완료 대기
+          echo "⏳ Waiting for deployment to complete..."
+          
+          MAX_WAIT=600
+          ELAPSED=0
+          
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            STATUS=$(aws ssm get-command-invocation \
+              --command-id "${COMMAND_ID}" \
+              --instance-id ${{ env.INSTANCE_ID }} \
+              --query 'Status' \
+              --output text)
+          
+            echo "Status: ${STATUS} (${ELAPSED}s elapsed)"
+          
+            if [ "${STATUS}" = "Success" ]; then
+              echo "✅ Deployment completed successfully!"
+              break
+            elif [ "${STATUS}" = "Failed" ] || [ "${STATUS}" = "Cancelled" ] || [ "${STATUS}" = "TimedOut" ]; then
+              echo "❌ Deployment failed with status: ${STATUS}"
+              exit 1
+            fi
+          
+            sleep 10
+            ELAPSED=$((ELAPSED + 10))
+          done
+          
+          if [ $ELAPSED -ge $MAX_WAIT ]; then
+            echo "❌ Deployment timed out"
+            exit 1
+          fi
+
+      - name: Get Deployment Logs
+        if: always()
+        run: |
+          echo "=========================================="
+          echo "📋 Deployment Logs"
+          echo "=========================================="
+          
+          aws ssm get-command-invocation \
+            --command-id ${{ env.COMMAND_ID }} \
+            --instance-id ${{ env.INSTANCE_ID }} \
+            --query 'StandardOutputContent' \
+            --output text
+          
+          ERROR_OUTPUT=$(aws ssm get-command-invocation \
+            --command-id ${{ env.COMMAND_ID }} \
+            --instance-id ${{ env.INSTANCE_ID }} \
+            --query 'StandardErrorContent' \
+            --output text)
+          
+          if [ ! -z "$ERROR_OUTPUT" ]; then
+            echo "=========================================="
+            echo "⚠️  Error Output"
+            echo "=========================================="
+            echo "$ERROR_OUTPUT"
+          fi
+
+      - name: Deployment Summary
+        if: success()
+        run: |
+          echo "=========================================="
+          echo "🎉 Fully Automated Deployment Summary"
+          echo "=========================================="
+          echo "✅ Blue-Green deployment completed"
+          echo "✅ Nginx traffic switched automatically"
+          echo "✅ Old container removed"
+          echo "📦 Image: ${{ needs.build-and-push.outputs.image-tag }}"
+          echo "🖥️  Instance: ${{ env.INSTANCE_ID }}"
+          echo "🌐 URL: https://${{ vars.APP_DOMAIN }}"
+          echo "=========================================="
+
+      - name: Deployment Failed
+        if: failure()
+        run: |
+          echo "=========================================="
+          echo "❌ Deployment Failed"
+          echo "=========================================="
+          echo "Please check the deployment logs above"
+          echo "The old container is still running (safe state)"
+          echo "=========================================="

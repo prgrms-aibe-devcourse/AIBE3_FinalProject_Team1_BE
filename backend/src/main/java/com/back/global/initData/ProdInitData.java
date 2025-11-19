@@ -16,11 +16,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Profile("prod")
 @RequiredArgsConstructor
 @Configuration
-public class NotProdInitData {
+public class ProdInitData {
     private final MemberService memberService;
     @Autowired
     @Lazy
-    private NotProdInitData self;
+    private ProdInitData self;
 
     @Bean
     ApplicationRunner notProdInitDataApplicationRunner() {
@@ -35,7 +35,7 @@ public class NotProdInitData {
 
         MemberJoinReqBody reqBody1 = new MemberJoinReqBody(
                 "admin@0.0",
-                "rla15923**",
+                "root123414",
                 "관리자",
                 "관리동",
                 "101동 101호",
@@ -46,7 +46,7 @@ public class NotProdInitData {
 
         MemberJoinReqBody reqBody2 = new MemberJoinReqBody(
                 "0@0.0",
-                "rla15923**",
+                "root123414",
                 "일반회원",
                 "일반동",
                 "101동 101호",
