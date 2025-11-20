@@ -62,4 +62,4 @@ custom:
 cloud:
   aws:
     s3:
-      bucket: dev-chwimeet-bucket-1
+      bucket: team1-chwimeet-bucket

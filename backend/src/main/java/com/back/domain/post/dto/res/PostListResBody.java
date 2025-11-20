@@ -3,6 +3,7 @@ package com.back.domain.post.dto.res;
 import com.back.domain.post.common.ReceiveMethod;
 import com.back.domain.post.common.ReturnMethod;
 import com.back.domain.post.entity.Post;
+import com.back.global.s3.S3Uploader;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -27,11 +28,11 @@ public record PostListResBody(
         //TODO: 후기 평균 평점 + 갯수
 
 ) {
-    public static PostListResBody of(Post post, boolean isFavorite) {
+    public static PostListResBody of(Post post, boolean isFavorite, S3Uploader s3) {
         String thumbnail = post.getImages().stream()
                 .filter(img -> Boolean.TRUE.equals(img.getIsPrimary()))
                 .findFirst()
-                .map(img -> img.getImageUrl())
+                .map(img -> s3.generatePresignedUrl(img.getImageUrl()))
                 .orElse(null);
 
         List<Long> regionIds = post.getPostRegions().stream()
