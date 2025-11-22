@@ -117,7 +117,7 @@ public class PostService {
 
             boolean isFavorite = memberId != null && !post.getAuthor().getId().equals(memberId) && this.postFavoriteRepository.findByMemberIdAndPostId(memberId, post.getId()).isPresent();
 
-            return PostListResBody.of(post, isFavorite);
+            return PostListResBody.of(post, isFavorite, s3);
         });
 
         return PageUt.of(mappedPage);
@@ -141,7 +141,7 @@ public class PostService {
     }
 
     public PagePayload<PostListResBody> getMyPosts(Long memberId, Pageable pageable) {
-        Page<PostListResBody> result = this.postQueryRepository.findMyPost(memberId, pageable).map(p -> PostListResBody.of(p, false));
+        Page<PostListResBody> result = this.postQueryRepository.findMyPost(memberId, pageable).map(p -> PostListResBody.of(p, false, s3));
 
         return PageUt.of(result);
     }
@@ -176,7 +176,7 @@ public class PostService {
 
         Page<PostFavorite> favorites = this.postFavoriteQueryRepository.findFavoritePosts(memberId, pageable);
 
-        Page<PostListResBody> result = favorites.map(f -> PostListResBody.of(f.getPost(), true));
+        Page<PostListResBody> result = favorites.map(f -> PostListResBody.of(f.getPost(), true, s3));
 
         return PageUt.of(result);
 
