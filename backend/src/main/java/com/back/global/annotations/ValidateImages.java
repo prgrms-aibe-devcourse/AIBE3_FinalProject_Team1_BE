@@ -14,10 +14,10 @@ public @interface ValidateImages {
 
     String message() default "유효하지 않은 이미지 파일입니다.";
 
+    /*==== OpenAI 기준 ====*/
     long maxSize() default 50 * 1024 * 1024; // 50MB
-    long minSize() default 100; // 100 bytes
+    int maxCount() default 500;
     String[] allowedTypes() default {"image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"};
-    String[] allowedExtensions() default {".jpeg", ".jpg", ".png", ".gif", ".webp"};
 
     Class<?>[] groups() default {};
     Class<? extends Payload>[] payload() default {};
