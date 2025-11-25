@@ -1,5 +1,6 @@
 package com.back.domain.post.controller;
 
+import com.back.domain.post.dto.req.PostAiContentReqBody;
 import com.back.domain.post.dto.req.PostCreateReqBody;
 import com.back.domain.post.dto.req.PostUpdateReqBody;
 import com.back.domain.post.dto.res.PostCreateResBody;
@@ -124,6 +125,13 @@ public class PostController implements PostApi {
     public ResponseEntity<RsData<String>> summarizeReviews(@PathVariable Long id) {
         String body = reviewSummaryService.summarizeReviews(id);
 
+        return ResponseEntity.ok(new RsData<>(HttpStatus.OK, HttpStatus.OK.name(), body));
+    }
+
+    @PostMapping(value = "/ai-content", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<RsData<String>> generateContent(@Valid @RequestPart("request") PostAiContentReqBody reqBody,
+                                                          @RequestPart(value = "file", required = false) List<MultipartFile> files) {
+        String body = postService.generateContent(reqBody, files);
         return ResponseEntity.ok(new RsData<>(HttpStatus.OK, HttpStatus.OK.name(), body));
     }
 }

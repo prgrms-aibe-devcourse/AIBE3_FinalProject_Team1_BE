@@ -4,7 +4,9 @@ import com.back.domain.category.entity.Category;
 import com.back.domain.category.repository.CategoryRepository;
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.repository.MemberRepository;
+import com.back.domain.post.dto.req.PostAiContentReqBody;
 import com.back.domain.post.dto.req.PostCreateReqBody;
+import com.back.domain.post.dto.req.PostOptionReqBody;
 import com.back.domain.post.dto.req.PostUpdateReqBody;
 import com.back.domain.post.dto.res.PostCreateResBody;
 import com.back.domain.post.dto.res.PostDetailResBody;
@@ -18,11 +20,14 @@ import com.back.global.s3.S3Uploader;
 import com.back.standard.util.page.PagePayload;
 import com.back.standard.util.page.PageUt;
 import lombok.RequiredArgsConstructor;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
@@ -41,9 +46,13 @@ public class PostService {
     private final PostQueryRepository postQueryRepository;
     private final PostFavoriteQueryRepository postFavoriteQueryRepository;
     private final S3Uploader s3;
+    private final ChatClient chatClient;
 
     private final RegionRepository regionRepository;
     private final CategoryRepository categoryRepository;
+
+    @Value("${custom.ai.post-content-prompt}")
+    private String postContentPrompt;
 
     @Transactional
     public PostCreateResBody createPost(PostCreateReqBody reqBody, List<MultipartFile> files, Long memberId) {
@@ -280,4 +289,66 @@ public class PostService {
         this.postRepository.delete(post);
     }
 
+    public String generateContent(PostAiContentReqBody reqBody, List<MultipartFile> files) {
+        String userPrompt = createUserPrompt(reqBody);
+
+        return chatClient.prompt()
+                         .system(postContentPrompt)
+                         .user(user -> {
+                             user.text(userPrompt);
+                             for (MultipartFile file : files) {
+                                 user.media(MimeTypeUtils.parseMimeType(file.getContentType()), file.getResource());
+                             }
+                         })
+                         .call()
+                         .content();
+    }
+
+    private String createUserPrompt(PostAiContentReqBody reqBody) {
+        Category category = categoryRepository.findById(reqBody.categoryId())
+                                              .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, "존재하지 않는 카테고리입니다."));
+
+        String optionInfo = getOptionInfo(reqBody);
+
+        return String.format("""
+                        다음 정보를 바탕으로 장비 대여 게시글의 상세 내용을 작성해주세요:
+                        
+                        제목: %s
+                        카테고리: %s
+                        대여료: %,d원
+                        보증금: %,d원
+                        
+                        옵션 정보:
+                        %s
+                        
+                        첨부된 이미지들을 참고하여 장비의 특징과 상태를 설명해주세요.
+                        """,
+                reqBody.title(),
+                category.getName(),
+                reqBody.fee(),
+                reqBody.deposit(),
+                optionInfo
+        );
+    }
+
+    private String getOptionInfo(PostAiContentReqBody reqBody) {
+        StringBuilder optionInfo = new StringBuilder();
+
+        if (reqBody.options() != null && !reqBody.options().isEmpty()) {
+            optionInfo.append("아래와 같은 추가 옵션들이 있습니다.\n");
+
+            for (PostOptionReqBody option : reqBody.options()) {
+                optionInfo.append(String.format(
+                        "- 옵션 이름: %s (추가 보증금: %,d원, 추가 대여료: %,d원)\n",
+                        option.name(),
+                        option.deposit(),
+                        option.fee()
+                ));
+            }
+        } else {
+            optionInfo.append("추가 옵션은 없습니다.\n");
+        }
+
+        return optionInfo.toString();
+    }
 }
