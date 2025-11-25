@@ -1,6 +1,7 @@
 
 package com.back.domain.category.controller;
 
+import com.back.domain.BaseTestContainer;
 import com.back.domain.category.dto.CategoryCreateReqBody;
 import com.back.domain.category.dto.CategoryResBody;
 import com.back.domain.category.dto.CategoryUpdateReqBody;
@@ -38,7 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
-class CategoryAdmControllerTest {
+class CategoryAdmControllerTest extends BaseTestContainer {
 
     @MockitoBean
     private CategoryService categoryService;

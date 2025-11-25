@@ -59,6 +59,10 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.testcontainers:junit-jupiter")
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
+    testImplementation("org.testcontainers:mariadb")
+    testImplementation("org.testcontainers:mysql")
 
     // AWS S3
     implementation("software.amazon.awssdk:s3:2.25.10")
