@@ -2,6 +2,7 @@ package com.back.domain.post.controller;
 
 import com.back.domain.post.dto.req.PostCreateReqBody;
 import com.back.domain.post.dto.req.PostUpdateReqBody;
+import com.back.domain.post.dto.res.GenPostDetailResBody;
 import com.back.domain.post.dto.res.PostCreateResBody;
 import com.back.domain.post.dto.res.PostDetailResBody;
 import com.back.domain.post.dto.res.PostListResBody;
@@ -140,9 +141,9 @@ public class PostController implements PostApi {
     }
 
     @PostMapping("/genDetail")
-    public ResponseEntity<RsData<String>> genDetail(@RequestPart("images") List<MultipartFile> imageFiles) {
-        String result = postContentGenerateService.generatePostDetail(imageFiles);
-        RsData<String> response = new RsData<>(HttpStatus.OK, result);
+    public ResponseEntity<RsData<GenPostDetailResBody>> genDetail(@RequestPart("images") List<MultipartFile> imageFiles) {
+        GenPostDetailResBody result = postContentGenerateService.generatePostDetail(imageFiles);
+        RsData<GenPostDetailResBody> response = new RsData<>(HttpStatus.OK, "응답 생성 성공", result);
         return ResponseEntity.ok(response);
     }
 }

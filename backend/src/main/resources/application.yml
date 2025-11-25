@@ -2,7 +2,7 @@ spring:
   application:
     name: Chwi-Meet
   config:
-    import: optional:file:.env[.properties], classpath:system-prompt.yml
+    import: optional:file:.env[.properties], classpath:system-prompt.yml, classpath:user-prompt.yml
   profiles:
     active: dev
   output:
@@ -46,9 +46,8 @@ spring:
       api-key: ${OPENAI_API_KEY}
       chat:
         options:
-          model: gpt-4.1-mini
-          temperature: 0.0
-          max-tokens: 1024
+          model: gpt-5-mini
+          temperature: 1.0
   servlet:
     multipart:
       max-file-size: 10MB
