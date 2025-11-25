@@ -5,6 +5,7 @@ import com.back.domain.post.dto.req.PostUpdateReqBody;
 import com.back.domain.post.dto.res.PostCreateResBody;
 import com.back.domain.post.dto.res.PostDetailResBody;
 import com.back.domain.post.dto.res.PostListResBody;
+import com.back.domain.post.service.PostContentGenerateService;
 import com.back.domain.post.service.PostService;
 import com.back.domain.review.service.ReviewSummaryService;
 import com.back.global.rsData.RsData;
@@ -33,6 +34,7 @@ public class PostController implements PostApi {
 
     private final PostService postService;
     private final ReviewSummaryService reviewSummaryService;
+    private final PostContentGenerateService postContentGenerateService;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<RsData<PostCreateResBody>> createPost(
@@ -135,5 +137,12 @@ public class PostController implements PostApi {
         String body = reviewSummaryService.summarizeReviews(id);
 
         return ResponseEntity.ok(new RsData<>(HttpStatus.OK, HttpStatus.OK.name(), body));
+    }
+
+    @PostMapping("/genDetail")
+    public ResponseEntity<RsData<String>> genDetail(@RequestPart("image") MultipartFile imageFile) {
+        String result = postContentGenerateService.generatePostDetail(imageFile);
+        RsData<String> response = new RsData<>(HttpStatus.OK, result);
+        return ResponseEntity.ok(response);
     }
 }
