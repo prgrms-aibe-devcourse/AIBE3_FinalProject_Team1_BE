@@ -8,6 +8,7 @@ import com.back.domain.post.dto.res.PostDetailResBody;
 import com.back.domain.post.dto.res.PostListResBody;
 import com.back.domain.post.service.PostService;
 import com.back.domain.review.service.ReviewSummaryService;
+import com.back.global.annotations.ValidateImages;
 import com.back.global.rsData.RsData;
 import com.back.global.security.SecurityUser;
 import com.back.standard.util.page.PagePayload;
@@ -130,7 +131,7 @@ public class PostController implements PostApi {
 
     @PostMapping(value = "/ai-content", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<RsData<String>> generateContent(@Valid @RequestPart("request") PostAiContentReqBody reqBody,
-                                                          @RequestPart(value = "file", required = false) List<MultipartFile> files) {
+                                                          @ValidateImages @RequestPart("file") List<MultipartFile> files) {
         String body = postService.generateContent(reqBody, files);
         return ResponseEntity.ok(new RsData<>(HttpStatus.OK, HttpStatus.OK.name(), body));
     }
