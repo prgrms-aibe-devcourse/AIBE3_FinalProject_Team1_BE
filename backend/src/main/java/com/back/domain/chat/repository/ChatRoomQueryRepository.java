@@ -7,6 +7,7 @@ import com.back.domain.chat.dto.OtherMemberDto;
 import com.back.domain.chat.entity.ChatMember;
 import com.back.domain.chat.entity.ChatRoom;
 import com.back.domain.chat.entity.QChatMember;
+import com.back.domain.member.entity.Member;
 import com.back.global.queryDsl.CustomQuerydslRepositorySupport;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
@@ -24,22 +25,21 @@ import static com.back.domain.chat.entity.QChatMember.chatMember;
 import static com.back.domain.chat.entity.QChatMessage.chatMessage;
 import static com.back.domain.chat.entity.QChatRoom.chatRoom;
 import static com.back.domain.member.entity.QMember.member;
-import static com.back.domain.post.entity.QPost.post;
 
 @Repository
-public class ChatQueryRepository extends CustomQuerydslRepositorySupport {
+public class ChatRoomQueryRepository extends CustomQuerydslRepositorySupport {
 
-    public ChatQueryRepository() {
+    public ChatRoomQueryRepository() {
         super(ChatRoom.class);
     }
 
     public Optional<Long> getChatRoomId(Long postId, Long guestId) {
         Long chatRoomId = select(chatRoom.id)
                 .from(chatRoom)
-                .join(chatRoom.chatMembers, chatMember)
+                .join(chatMember).on(chatMember.chatRoomId.eq(chatRoom.id))
                 .where(
-                        chatRoom.post.id.eq(postId),
-                        chatMember.member.id.eq(guestId)
+                        chatRoom.postId.eq(postId),
+                        chatMember.memberId.eq(guestId)
                 )
                 .fetchOne();
 
@@ -47,11 +47,10 @@ public class ChatQueryRepository extends CustomQuerydslRepositorySupport {
     }
 
     public Page<ChatRoomListDto> getMyChatRooms(Long memberId, Pageable pageable, String keyword) {
-
         QChatMember me = new QChatMember("me");
         QChatMember other = new QChatMember("other");
 
-        BooleanExpression condition = me.member.id.eq(memberId)
+        BooleanExpression condition = me.memberId.eq(memberId)
                 .and(createKeywordCondition(keyword));
 
         // Content Query
@@ -60,7 +59,7 @@ public class ChatQueryRepository extends CustomQuerydslRepositorySupport {
                         chatRoom.id,
                         chatRoom.createdAt,
                         Projections.constructor(ChatPostDto.class,
-                                post.title
+                                chatRoom.postTitleSnapshot
                         ),
                         Projections.constructor(OtherMemberDto.class,
                                 member.id,
@@ -72,18 +71,17 @@ public class ChatQueryRepository extends CustomQuerydslRepositorySupport {
                         Expressions.nullExpression(Integer.class)
                 ))
                 .from(chatRoom)
-                .join(chatRoom.post, post)
-                .join(chatRoom.chatMembers, me)
-                .join(chatRoom.chatMembers, other)
-                .join(other.member, member)
-                .where(condition.and(other.member.id.ne(memberId)))
+                .join(me).on(me.chatRoomId.eq(chatRoom.id))
+                .join(other).on(other.chatRoomId.eq(chatRoom.id))
+                .join(member).on(member.id.eq(other.memberId))
+                .where(condition.and(other.memberId.ne(memberId)))
                 .orderBy(chatRoom.lastMessageTime.desc().nullsLast());
 
         // Count Query
         Function<JPAQueryFactory, JPAQuery<Long>> countQuery = query -> query
                 .select(chatRoom.id.countDistinct())
                 .from(chatRoom)
-                .join(chatRoom.chatMembers, me)
+                .join(me).on(me.chatRoomId.eq(chatRoom.id))
                 .where(condition);
 
         return applyPagination(pageable, contentQuery, countQuery);
@@ -93,53 +91,24 @@ public class ChatQueryRepository extends CustomQuerydslRepositorySupport {
         if (keyword == null || keyword.isBlank()) {
             return null;
         }
-        return post.title.containsIgnoreCase(keyword)
+        return chatRoom.postTitleSnapshot.containsIgnoreCase(keyword)
                 .or(member.nickname.containsIgnoreCase(keyword));
     }
 
     public Optional<ChatRoom> getChatRoom(Long chatRoomId) {
-
         ChatRoom result = selectFrom(chatRoom)
-                .join(chatRoom.post, post).fetchJoin()
-                .join(chatRoom.chatMembers, chatMember).fetchJoin()
-                .join(chatMember.member, member).fetchJoin()
                 .where(chatRoom.id.eq(chatRoomId))
-                .distinct()
                 .fetchOne();
 
         return Optional.ofNullable(result);
     }
 
-    public Page<ChatMessageDto> getChatMessages(Long chatRoomId, Long memberId, Pageable pageable) {
-
-        Function<JPAQueryFactory, JPAQuery<ChatMessageDto>> contentQuery = query -> query
-                .select(Projections.constructor(ChatMessageDto.class,
-                        chatMessage.id,
-                        member.id,
-                        chatMessage.content,
-                        chatMessage.createdAt
-                ))
-                .from(chatMessage)
-                .join(chatMember).on(chatMessage.chatMemberId.eq(chatMember.id))
-                .join(member).on(chatMember.member.id.eq(member.id))
-                .where(chatMessage.chatRoomId.eq(chatRoomId))
-                .orderBy(chatMessage.id.desc());
-
-        Function<JPAQueryFactory, JPAQuery<Long>> countQuery = query -> query
-                .select(chatMessage.count())
-                .from(chatMessage)
-                .where(chatMessage.chatRoomId.eq(chatRoomId));
-
-        return applyPagination(pageable, contentQuery, countQuery);
-    }
-
     public boolean isMemberInChatRoom(Long chatRoomId, Long memberId) {
-
         Integer count = select(chatMember.id.count().intValue())
                 .from(chatMember)
                 .where(
-                        chatMember.chatRoom.id.eq(chatRoomId),
-                        chatMember.member.id.eq(memberId)
+                        chatMember.chatRoomId.eq(chatRoomId),
+                        chatMember.memberId.eq(memberId)
                 )
                 .fetchOne();
 
@@ -147,14 +116,11 @@ public class ChatQueryRepository extends CustomQuerydslRepositorySupport {
     }
 
     public Optional<ChatMember> findChatMember(Long chatRoomId, Long memberId) {
-
         ChatMember result = select(chatMember)
                 .from(chatMember)
-                .join(chatMember.chatRoom, chatRoom).fetchJoin()
-                .join(chatMember.member, member).fetchJoin()
                 .where(
-                        chatMember.chatRoom.id.eq(chatRoomId),
-                        chatMember.member.id.eq(memberId)
+                        chatMember.chatRoomId.eq(chatRoomId),
+                        chatMember.memberId.eq(memberId)
                 )
                 .fetchOne();
 
@@ -162,15 +128,27 @@ public class ChatQueryRepository extends CustomQuerydslRepositorySupport {
     }
 
     public Optional<Long> findOtherMemberId(Long chatRoomId, Long memberId) {
-        Long otherMemberId = select(member.id)
+        Long otherMemberId = select(chatMember.memberId)
                 .from(chatMember)
-                .join(chatMember.member, member)
                 .where(
-                        chatMember.chatRoom.id.eq(chatRoomId),
-                        chatMember.member.id.ne(memberId)
+                        chatMember.chatRoomId.eq(chatRoomId),
+                        chatMember.memberId.ne(memberId)
                 )
                 .fetchOne();
 
         return Optional.ofNullable(otherMemberId);
+    }
+
+    public Optional<Member> findOtherMember(Long chatRoomId, Long memberId) {
+        Member otherMember = select(member)
+                .from(chatMember)
+                .join(member).on(chatMember.memberId.eq(member.id))
+                .where(
+                        chatMember.chatRoomId.eq(chatRoomId),
+                        chatMember.memberId.ne(memberId)
+                )
+                .fetchOne();
+
+        return Optional.ofNullable(otherMember);
     }
 }

@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -40,5 +41,20 @@ public interface MemberApi {
     @Operation(summary = "사용자 조회(일반 회원)", description = "ID로 회원 정보를 조회합니다.")
     ResponseEntity<RsData<SimpleMemberDto>> getMember(
             @PathVariable Long id
+    );
+
+    @Operation(summary = "닉네임 중복 체크", description = "닉네임이 중복되는지 확인합니다.")
+    ResponseEntity<RsData<MemberNicknameResBody>> checkNickname(
+            @RequestParam String nickname
+    );
+
+    @Operation(summary = "인증 코드 전송", description = "이메일로 인증 코드를 전송합니다.")
+    public ResponseEntity<RsData<MemberSendCodeResBody>> sendVerificationCode(
+            @RequestBody @Valid MemberSendCodeReqBody reqBody
+    );
+
+    @Operation(summary = "인증 코드 검증", description = "이메일과 인증 코드를 검증합니다.")
+    public ResponseEntity<RsData<MemberVerifyResBody>> verifyCode(
+            @RequestBody @Valid MemberVerifyReqBody reqBody
     );
 }

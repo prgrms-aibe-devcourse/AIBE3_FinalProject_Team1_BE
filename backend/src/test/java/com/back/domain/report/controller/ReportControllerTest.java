@@ -122,7 +122,7 @@ class ReportControllerTest {
                 .andExpect(jsonPath("$.status").value(201))
                 .andExpect(jsonPath("$.msg").value("CREATED"))
                 .andExpect(jsonPath("$.data").exists())
-                .andExpect(jsonPath("$.data.reportId").value(1))
+                .andExpect(jsonPath("$.data.id").value(1))
                 .andExpect(jsonPath("$.data.reportType").value("POST"))
                 .andExpect(jsonPath("$.data.targetId").value(100))
                 .andExpect(jsonPath("$.data.comment").value("This is a test comment"))

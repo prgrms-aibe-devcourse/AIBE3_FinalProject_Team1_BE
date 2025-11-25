@@ -9,17 +9,26 @@ import lombok.*;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
+@Table(name = "chat_member")
 public class ChatMember extends BaseEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "chat_room_id")
-    private ChatRoom chatRoom;
+    @Column(name = "chat_room_id", nullable = false)
+    private Long chatRoomId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "member_id")
-    private Member member;
+    @Column(name = "member_id", nullable = false)
+    private Long memberId;
 
-    private Long lastReadMessageId = 0L;
+    @Column(name = "last_read_message_id", nullable = false)
+    private Long lastReadMessageId;
+
+    public static ChatMember create(Long chatRoomId, Long memberId) {
+        ChatMember chatMember = new ChatMember();
+        chatMember.chatRoomId = chatRoomId;
+        chatMember.memberId = memberId;
+        chatMember.lastReadMessageId = 0L;
+
+        return chatMember;
+    }
 
     public void updateLastReadMessageId(Long messageId) {
         if(messageId != null && messageId > this.lastReadMessageId){

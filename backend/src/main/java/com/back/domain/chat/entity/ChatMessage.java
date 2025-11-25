@@ -11,15 +11,16 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
+@Table(name = "chat_message")
 public class ChatMessage extends BaseEntity {
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content;
 
-    @Column(name = "chat_room_id")
+    @Column(name = "chat_room_id", nullable = false)
     private Long chatRoomId;
 
-    @Column(name = "chat_member_id")
+    @Column(name = "chat_member_id", nullable = false)
     private Long chatMemberId;
 
     public static ChatMessage create(String content, Long chatRoomId, Long chatMemberId) {

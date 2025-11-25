@@ -10,7 +10,7 @@ public record PostOptionResBody(
 ) {
     public static PostOptionResBody of(PostOption option) {
         return new PostOptionResBody(
-                option.getPost().getId(),
+                option.getId(),
                 option.getName(),
                 option.getDeposit(),
                 option.getFee()

@@ -134,7 +134,7 @@ class ReportAdminControllerTest {
                 .andExpect(jsonPath("$.msg").value("OK"))
                 .andExpect(jsonPath("$.data.content").isArray())
                 .andExpect(jsonPath("$.data.content.length()").value(3))
-                .andExpect(jsonPath("$.data.content[0].reportId").value(1))
+                .andExpect(jsonPath("$.data.content[0].id").value(1))
                 .andExpect(jsonPath("$.data.content[0].reportType").value("POST"))
                 .andExpect(jsonPath("$.data.content[1].reportType").value("MEMBER"))
                 .andExpect(jsonPath("$.data.content[2].reportType").value("REVIEW"))

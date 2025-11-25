@@ -23,6 +23,18 @@ spring:
         format_sql: true
         highlight_sql: true
         use_sql_comments: true
+  mail:
+    host: ${SPRING__MAIL__HOST}
+    port: ${SPRING__MAIL__PORT}
+    username: ${SPRING__MAIL__USERNAME}
+    password: ${SPRING__MAIL__PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
   data:
     redis:
       host: ${SPRING__REDIS__HOST}

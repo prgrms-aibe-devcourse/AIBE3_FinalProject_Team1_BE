@@ -6,7 +6,7 @@ import com.back.domain.report.entity.Report;
 import java.time.LocalDateTime;
 
 public record ReportResBody(
-        Long reportId,
+        Long id,
         ReportType reportType,
         Long targetId,
         String comment,

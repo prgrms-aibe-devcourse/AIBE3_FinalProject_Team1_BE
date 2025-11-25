@@ -36,6 +36,7 @@ public class SecurityConfig {
 
     // 인증 없이 접근 가능한 공개 엔드포인트
     private static final String[] PUBLIC_ENDPOINTS = {
+            "/",
             "/favicon.ico",
             "/api/v1/members",
             "/api/v1/members/**",           // 회원 인증 (로그인, 회원가입, OAuth2 등)

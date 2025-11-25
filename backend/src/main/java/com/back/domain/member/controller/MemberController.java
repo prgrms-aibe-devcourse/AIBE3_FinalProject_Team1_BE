@@ -3,6 +3,7 @@ package com.back.domain.member.controller;
 import com.back.domain.member.dto.*;
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.service.AuthTokenService;
+import com.back.domain.member.service.EmailService;
 import com.back.domain.member.service.MemberService;
 import com.back.domain.member.service.RefreshTokenStore;
 import com.back.global.exception.ServiceException;
@@ -17,6 +18,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
+
 @RestController
 @RequestMapping("/api/v1/members")
 @RequiredArgsConstructor
@@ -25,6 +28,7 @@ public class MemberController implements MemberApi{
     private final AuthTokenService authTokenService;
     private final RefreshTokenStore refreshTokenStore;
     private final CookieHelper cookieHelper;
+    private final EmailService emailService;
 
     @PostMapping
     public ResponseEntity<RsData<MemberDto>> join(
@@ -92,5 +96,29 @@ public class MemberController implements MemberApi{
     ) {
         Member member = memberService.getById(id);
         return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "회원 정보입니다.", new SimpleMemberDto(member)));
+    }
+
+    @GetMapping("/check-nickname")
+    public ResponseEntity<RsData<MemberNicknameResBody>> checkNickname(
+            @RequestParam String nickname
+    ){
+        boolean isDuplicated = memberService.existsByNickname(nickname);
+        return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "닉네임 중복 확인 완료", new MemberNicknameResBody(isDuplicated)));
+    }
+
+    @PostMapping("/send-code")
+    public ResponseEntity<RsData<MemberSendCodeResBody>> sendVerificationCode(
+            @RequestBody @Valid MemberSendCodeReqBody reqBody
+    ) {
+        LocalDateTime expiresIn = emailService.sendVerificationCode(reqBody.email());
+        return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "이메일 인증이 발송되었습니다.", new MemberSendCodeResBody(expiresIn)));
+    }
+
+    @PostMapping("/verify-code")
+    public ResponseEntity<RsData<MemberVerifyResBody>> verifyCode(
+            @RequestBody @Valid MemberVerifyReqBody reqBody
+    ) {
+        emailService.verifyCode(reqBody.email(), reqBody.code());
+        return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "이메일 인증이 완료되었습니다.", new MemberVerifyResBody(true)));
     }
 }

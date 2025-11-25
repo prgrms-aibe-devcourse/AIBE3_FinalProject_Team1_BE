@@ -184,9 +184,13 @@ echo "APP_1_DB_NAME=${var.app_1_db_name}" >> /etc/environment
 echo "GITHUB_ACCESS_TOKEN_1_OWNER=${var.github_access_token_1_owner}" >> /etc/environment
 echo "GITHUB_ACCESS_TOKEN_1=${var.github_access_token_1}" >> /etc/environment
 echo "CUSTOM__JWT__SECRETKEY=${var.jwt_secret}" >> /etc/environment
+echo "CUSTOM_CORS_ALLOWED_ORIGINS=${var.cors_allowed_origin}" >> /etc/environment
 echo "OPENAI_API_KEY=${var.openai_api_key}" >> /etc/environment
 echo "CLOUD__AWS__S3__BUCKET=${var.s3_bucket_name}" >> /etc/environment
-echo "CUSTOM_CORS_ALLOWED_ORIGINS=${var.cors_allowed_origin}" >> /etc/environment
+echo "SPRING__MAIL__HOST=${var.mail_host}" >> /etc/environment
+echo "SPRING__MAIL__PORT=${var.mail_port}" >> /etc/environment
+echo "SPRING__MAIL__USERNAME=${var.mail_username}" >> /etc/environment
+echo "SPRING__MAIL__PASSWORD=${var.mail_password}" >> /etc/environment
 source /etc/environment
 
 # 도커 설치 및 실행/활성화
@@ -271,6 +275,12 @@ SPRING__REDIS__PORT=6379
 SPRING__REDIS__PASSWORD=${var.password_1}
 CUSTOM__JWT__SECRETKEY=${var.jwt_secret}
 CUSTOM_CORS_ALLOWED_ORIGINS=${var.cors_allowed_origin}
+OPENAI_API_KEY=${var.openai_api_key}
+CLOUD__AWS__S3__BUCKET=${var.s3_bucket_name}
+SPRING__MAIL__HOST=${var.mail_host}
+SPRING__MAIL__PORT=${var.mail_port}
+SPRING__MAIL__USERNAME=${var.mail_username}
+SPRING__MAIL__PASSWORD=${var.mail_password}
 ENV_EOF
 
 # docker-compose.yml 생성 (컨테이너 이름은 team1-app-001/002 유지)
@@ -298,6 +308,11 @@ services:
       - CUSTOM_CORS_ALLOWED_ORIGINS=$${CUSTOM_CORS_ALLOWED_ORIGINS}
       - OPENAI_API_KEY=$${OPENAI_API_KEY}
       - CLOUD__AWS__S3__BUCKET=$${CLOUD__AWS__S3__BUCKET}
+      - SPRING__MAIL__HOST=$${SPRING__MAIL__HOST}
+      - SPRING__MAIL__PORT=$${SPRING__MAIL__PORT}
+      - SPRING__MAIL__USERNAME=$${SPRING__MAIL__USERNAME}
+      - SPRING__MAIL__PASSWORD=$${SPRING__MAIL__PASSWORD}
+
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 30s
@@ -325,6 +340,10 @@ services:
       - CUSTOM_CORS_ALLOWED_ORIGINS=$${CUSTOM_CORS_ALLOWED_ORIGINS}
       - OPENAI_API_KEY=$${OPENAI_API_KEY}
       - CLOUD__AWS__S3__BUCKET=$${CLOUD__AWS__S3__BUCKET}
+      - SPRING__MAIL__HOST=$${SPRING__MAIL__HOST}
+      - SPRING__MAIL__PORT=$${SPRING__MAIL__PORT}
+      - SPRING__MAIL__USERNAME=$${SPRING__MAIL__USERNAME}
+      - SPRING__MAIL__PASSWORD=$${SPRING__MAIL__PASSWORD}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 30s
