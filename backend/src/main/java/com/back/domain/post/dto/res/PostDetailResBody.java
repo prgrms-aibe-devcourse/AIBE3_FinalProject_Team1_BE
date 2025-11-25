@@ -25,10 +25,9 @@ public record PostDetailResBody(
         LocalDateTime modifiedAt,
         PostAuthorDto author,
         Boolean isFavorite,
-        Boolean isBanned,
-        List<LocalDateTime> reservedDates
+        Boolean isBanned
 ) {
-    public static PostDetailResBody of(Post post, boolean isFavorite, List<LocalDateTime> reservedDates) {
+    public static PostDetailResBody of(Post post, boolean isFavorite, List<PostImageResBody> images) {
 
         List<Long> regionIds = post.getPostRegions().stream()
                 .map(r -> r.getRegion().getId())
@@ -36,10 +35,6 @@ public record PostDetailResBody(
 
         List<PostOptionResBody> options = post.getOptions().stream()
                 .map(PostOptionResBody::of)
-                .toList();
-
-        List<PostImageResBody> images = post.getImages().stream()
-                .map(PostImageResBody::of)
                 .toList();
 
         return new PostDetailResBody(
@@ -60,8 +55,7 @@ public record PostDetailResBody(
                 post.getModifiedAt(),
                 PostAuthorDto.from(post.getAuthor()),
                 isFavorite,
-                post.getIsBanned(),
-                reservedDates
+                post.getIsBanned()
         );
     }
 }

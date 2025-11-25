@@ -6,9 +6,9 @@ public record PostImageResBody(
         String file,
         Boolean isPrimary
 ) {
-    public static PostImageResBody of(PostImage image) {
+    public static PostImageResBody of(PostImage image, String presignedUrl) {
         return new PostImageResBody(
-                image.getImageUrl(),
+                presignedUrl,
                 image.getIsPrimary()
         );
     }

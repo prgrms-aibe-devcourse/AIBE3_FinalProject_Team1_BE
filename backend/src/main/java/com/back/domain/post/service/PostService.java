@@ -8,6 +8,7 @@ import com.back.domain.post.dto.req.PostCreateReqBody;
 import com.back.domain.post.dto.req.PostUpdateReqBody;
 import com.back.domain.post.dto.res.PostCreateResBody;
 import com.back.domain.post.dto.res.PostDetailResBody;
+import com.back.domain.post.dto.res.PostImageResBody;
 import com.back.domain.post.dto.res.PostListResBody;
 import com.back.domain.post.entity.*;
 import com.back.domain.post.repository.*;
@@ -141,9 +142,11 @@ public class PostService {
                     .isPresent();
         }
 
-        List<LocalDateTime> reservedDates = postQueryRepository.findReservedDatesFromToday(postId);
+        List<PostImageResBody> images = post.getImages().stream()
+                .map(img -> PostImageResBody.of(img, s3.generatePresignedUrl(img.getImageUrl())))
+                .toList();
 
-        return PostDetailResBody.of(post, isFavorite, reservedDates);
+        return PostDetailResBody.of(post, isFavorite, images);
     }
 
     public PagePayload<PostListResBody> getMyPosts(Long memberId, Pageable pageable) {
