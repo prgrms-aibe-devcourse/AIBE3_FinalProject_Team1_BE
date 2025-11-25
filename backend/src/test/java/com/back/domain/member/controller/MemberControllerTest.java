@@ -63,10 +63,7 @@ class MemberControllerTest {
 
     @BeforeEach
     void setup() {
-        Member member = new Member("test@example.com", "password123",
-                "테스트", "01012345678",
-                "서울시 강남구", "테헤란로 123", "테스트닉네임",
-                MemberRole.USER);
+        Member member = new Member("test@example.com", "password123", "테스트닉네임", MemberRole.USER);
 
         // ReflectionTestUtils를 사용하여 ID 설정
         ReflectionTestUtils.setField(member, "id", 1L);
@@ -84,11 +81,7 @@ class MemberControllerTest {
         MemberJoinReqBody joinRequest = new MemberJoinReqBody(
                 "test@example.com",
                 "password123",
-                "테스트",
-                "서울시 강남구",
-                "테헤란로 123",
-                "테스트닉네임",
-                "01012345678"
+                "테스트닉네임"
         );
 
         when(memberService.join(any())).thenReturn(testMember);
@@ -102,11 +95,11 @@ class MemberControllerTest {
                 .andExpect(jsonPath("$.msg").value("회원가입 되었습니다."))
                 .andExpect(jsonPath("$.data").exists())  // ✅ data 존재 확인
                 .andExpect(jsonPath("$.data.email").value("test@example.com"))
-                .andExpect(jsonPath("$.data.name").value("테스트"))
                 .andExpect(jsonPath("$.data.nickname").value("테스트닉네임"))
-                .andExpect(jsonPath("$.data.phoneNumber").value("01012345678"))
-                .andExpect(jsonPath("$.data.address1").value("서울시 강남구"))
-                .andExpect(jsonPath("$.data.address2").value("테헤란로 123"));
+                .andExpect(jsonPath("$.data.name").isEmpty())
+                .andExpect(jsonPath("$.data.phoneNumber").isEmpty())
+                .andExpect(jsonPath("$.data.address1").isEmpty())
+                .andExpect(jsonPath("$.data.address2").isEmpty());
 
         verify(memberService).join(any());
     }
@@ -131,7 +124,7 @@ class MemberControllerTest {
                 .andExpect(jsonPath("$.status").value(200))
                 .andExpect(jsonPath("$.msg").value("로그인 되었습니다."))
                 .andExpect(jsonPath("$.data.email").value("test@example.com"))
-                .andExpect(jsonPath("$.data.name").value("테스트"))
+                .andExpect(jsonPath("$.data.name").isEmpty())
                 .andExpect(jsonPath("$.data.nickname").value("테스트닉네임"));
 
         verify(cookieHelper).setCookie("accessToken", "access-token");
@@ -207,7 +200,7 @@ class MemberControllerTest {
                 .andExpect(jsonPath("$.status").value(200))
                 .andExpect(jsonPath("$.msg").value("현재 회원 정보입니다."))
                 .andExpect(jsonPath("$.data.email").value("test@example.com"))
-                .andExpect(jsonPath("$.data.name").value("테스트"))
+                .andExpect(jsonPath("$.data.name").isEmpty())
                 .andExpect(jsonPath("$.data.nickname").value("테스트닉네임"));
     }
 }

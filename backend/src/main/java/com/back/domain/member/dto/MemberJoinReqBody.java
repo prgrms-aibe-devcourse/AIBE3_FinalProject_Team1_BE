@@ -12,14 +12,6 @@ public record MemberJoinReqBody(
         @Size(min = 8)
         String password,
         @NotBlank
-        String name,
-        @NotBlank
-        String address1,
-        @NotBlank
-        String address2,
-        @NotBlank
-        String nickname,
-        @NotBlank
-        String phoneNumber
+        String nickname
 ) {
 }

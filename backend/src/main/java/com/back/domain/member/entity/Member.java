@@ -24,23 +24,33 @@ import java.util.List;
 public class Member extends BaseEntity {
     @Column(unique = true, nullable = false)
     private String email;
+
     @Column(nullable = false)
     private String password;
-    @Column(nullable = false)
+
+    @Column
     private String name;
-    @Column(unique = true, nullable = false)
+
+    @Column(unique = true)
     private String phoneNumber;
-    @Column(nullable = false)
+
+    @Column
     private String address1;
-    @Column(nullable = false)
+
+    @Column
     private String address2;
+
     @Column(unique = true, nullable = false)
     private String nickname;
+
     @Column(nullable = false)
     private boolean isBanned;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private MemberRole role;
+
+    @Column
     private String profileImgUrl;
 
     public Member(String email, String password, String name, String phoneNumber,
@@ -64,6 +74,9 @@ public class Member extends BaseEntity {
     public Member(String email, String password, String name, String phoneNumber,
                   String address1, String address2, String nickname) {
         this(email, password, name, phoneNumber, address1, address2, nickname, MemberRole.USER, null);
+    }
+    public Member(String email, String password, String nickname, MemberRole role) {
+        this(email, password, null, null, null, null, nickname, role, null);
     }
 
     public Collection<? extends GrantedAuthority> getAuthorities() {

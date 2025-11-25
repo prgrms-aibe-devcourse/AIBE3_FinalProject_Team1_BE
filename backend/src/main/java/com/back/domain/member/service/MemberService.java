@@ -40,9 +40,7 @@ public class MemberService {
 
     public Member join(MemberJoinReqBody reqBody, MemberRole role) {
         String password = passwordEncoder.encode(reqBody.password());
-        Member member = new Member(reqBody.email(), password, reqBody.name(),
-                reqBody.phoneNumber(), reqBody.address1(), reqBody.address2(),
-                reqBody.nickname(), role);
+        Member member = new Member(reqBody.email(), password, reqBody.nickname(), role);
         return memberRepository.save(member);
     }
 
