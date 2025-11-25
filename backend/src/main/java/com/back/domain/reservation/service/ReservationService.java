@@ -2,6 +2,7 @@ package com.back.domain.reservation.service;
 
 
 import com.back.domain.member.entity.Member;
+import com.back.domain.member.repository.MemberRepository;
 import com.back.domain.post.common.ReceiveMethod;
 import com.back.domain.post.common.ReturnMethod;
 import com.back.domain.post.entity.Post;
@@ -28,8 +29,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +39,7 @@ public class ReservationService {
     private final ReservationQueryRepository reservationQueryRepository;
     private final ReservationLogRepository reservationLogRepository;
     private final ReviewQueryRepository reviewQueryRepository;
+    private final MemberRepository memberRepository;
     private final PostService postService;
 
     public ReservationDto create(CreateReservationReqBody reqBody, Member author) {
@@ -377,7 +379,7 @@ public class ReservationService {
         Reservation r = reservationRepository.save(reservation);
 
         // 상태 전환 로그 저장
-        ReservationLog log = new ReservationLog(reservation.getStatus(), reservation);
+        ReservationLog log = new ReservationLog(reservation.getStatus(), reservation, memberId);
         reservationLogRepository.save(log);
 
         return convertToReservationDto(r);
@@ -484,8 +486,36 @@ public class ReservationService {
                 ))
                 .toList();
 
-        List<ReservationLogDto> logDtos = reservationLogRepository.findByReservation(reservation).stream()
-                .map(ReservationLogDto::new)
+        // 1. 로그 전체 조회 (reservation 하나 기준이니까 N+1 아님)
+        List<ReservationLog> logs = reservationLogRepository.findByReservation(reservation);
+
+        // 2. authorId 한 번에 모으기
+        Set<Long> authorIds = logs.stream()
+                .map(ReservationLog::getAuthorId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        // 3. authorIds로 Member 한 번에 조회
+        Map<Long, String> authorNicknameMap = authorIds.isEmpty()
+                ? Collections.emptyMap()
+                : memberRepository.findAllById(authorIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        Member::getId,
+                        Member::getNickname
+                ));
+
+
+        // 4. 로그 DTO로 변환하면서 authorName 매핑
+        List<ReservationLogDto> logDtos = logs.stream()
+                .map(log -> {
+                    String authorNickname = authorNicknameMap.get(log.getAuthorId());
+                    // 기본값 처리(탈퇴/없음 등) 하고 싶다면 여기서
+                    if (authorNickname == null) {
+                        authorNickname = "알 수 없는 사용자";
+                    }
+                    return new ReservationLogDto(log, authorNickname);
+                })
                 .toList();
 
         return new ReservationDto(

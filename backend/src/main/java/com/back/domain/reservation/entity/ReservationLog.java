@@ -18,4 +18,6 @@ public class ReservationLog extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reservation_id", nullable = false)
     private Reservation reservation;
+
+    private Long authorId;
 }

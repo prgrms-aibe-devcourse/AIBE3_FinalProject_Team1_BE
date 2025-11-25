@@ -36,22 +36,14 @@ public class ProdInitData {
         MemberJoinReqBody reqBody1 = new MemberJoinReqBody(
                 "admin@0.0",
                 "root123414",
-                "관리자",
-                "관리동",
-                "101동 101호",
-                "관리닉네임",
-                "010-0000-7777"
+                "관리닉네임"
                 );
         Member admin = memberService.join(reqBody1, MemberRole.ADMIN);
 
         MemberJoinReqBody reqBody2 = new MemberJoinReqBody(
                 "0@0.0",
                 "root123414",
-                "일반회원",
-                "일반동",
-                "101동 101호",
-                "일반닉네임",
-                "010-0000-0000"
+                "일반닉네임"
         );
         Member member = memberService.join(reqBody2, MemberRole.USER);
     }

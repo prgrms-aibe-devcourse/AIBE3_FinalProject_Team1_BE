@@ -126,7 +126,13 @@ public class PostService {
 
             boolean isFavorite = memberId != null && !post.getAuthor().getId().equals(memberId) && this.postFavoriteRepository.findByMemberIdAndPostId(memberId, post.getId()).isPresent();
 
-            return PostListResBody.of(post, isFavorite);
+            String thumbnail = post.getImages().stream()
+                    .filter(img -> img.getIsPrimary())
+                    .findFirst()
+                    .map(img -> s3.generatePresignedUrl(img.getImageUrl()))
+                    .orElse(null);
+
+            return PostListResBody.of(post, isFavorite, thumbnail);
         });
 
         return PageUt.of(mappedPage);
@@ -150,7 +156,17 @@ public class PostService {
     }
 
     public PagePayload<PostListResBody> getMyPosts(Long memberId, Pageable pageable) {
-        Page<PostListResBody> result = this.postQueryRepository.findMyPost(memberId, pageable).map(p -> PostListResBody.of(p, false));
+        Page<PostListResBody> result = this.postQueryRepository.findMyPost(memberId, pageable)
+                .map(post -> {
+
+                    String thumbnail = post.getImages().stream()
+                            .filter(img -> Boolean.TRUE.equals(img.getIsPrimary()))
+                            .findFirst()
+                            .map(img -> s3.generatePresignedUrl(img.getImageUrl()))
+                            .orElse(null);
+
+                    return PostListResBody.of(post, false, thumbnail);
+                });
 
         return PageUt.of(result);
     }
@@ -185,7 +201,18 @@ public class PostService {
 
         Page<PostFavorite> favorites = this.postFavoriteQueryRepository.findFavoritePosts(memberId, pageable);
 
-        Page<PostListResBody> result = favorites.map(f -> PostListResBody.of(f.getPost(), true));
+        Page<PostListResBody> result = favorites.map(fav -> {
+
+            Post post = fav.getPost();
+
+            String thumbnail = post.getImages().stream()
+                    .filter(img -> Boolean.TRUE.equals(img.getIsPrimary()))
+                    .findFirst()
+                    .map(img -> s3.generatePresignedUrl(img.getImageUrl()))
+                    .orElse(null);
+
+            return PostListResBody.of(post, true, thumbnail);
+        });
 
         return PageUt.of(result);
 
@@ -289,6 +316,9 @@ public class PostService {
         this.postRepository.delete(post);
     }
 
+    public List<LocalDateTime> getReservedDates(Long id) {
+        return postQueryRepository.findReservedDatesFromToday(id);
+    }
     public String generateContent(PostAiContentReqBody reqBody, List<MultipartFile> files) {
         String userPrompt = createUserPrompt(reqBody);
 

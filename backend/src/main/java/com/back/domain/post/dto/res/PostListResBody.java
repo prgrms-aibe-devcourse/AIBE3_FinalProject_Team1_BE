@@ -27,13 +27,7 @@ public record PostListResBody(
         //TODO: 후기 평균 평점 + 갯수
 
 ) {
-    public static PostListResBody of(Post post, boolean isFavorite) {
-        String thumbnail = post.getImages().stream()
-                .filter(img -> Boolean.TRUE.equals(img.getIsPrimary()))
-                .findFirst()
-                .map(img -> img.getImageUrl())
-                .orElse(null);
-
+    public static PostListResBody of(Post post, boolean isFavorite, String thumbnailImageUrl) {
         List<Long> regionIds = post.getPostRegions().stream()
                 .map(r -> r.getRegion().getId())
                 .toList();
@@ -41,7 +35,7 @@ public record PostListResBody(
         return new PostListResBody(
                 post.getId(),
                 post.getTitle(),
-                thumbnail,
+                thumbnailImageUrl,
                 post.getCategory().getId(),
                 regionIds,
                 post.getReceiveMethod(),

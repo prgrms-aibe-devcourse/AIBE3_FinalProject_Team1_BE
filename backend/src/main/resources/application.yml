@@ -74,4 +74,4 @@ custom:
 cloud:
   aws:
     s3:
-      bucket: dev-chwimeet-bucket-1
+      bucket: ${CLOUD__AWS__S3__BUCKET}

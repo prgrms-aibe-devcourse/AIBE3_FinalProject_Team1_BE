@@ -475,7 +475,7 @@ class ReservationControllerTest {
                 LocalDateTime.now(),
                 LocalDateTime.now(),
                 List.of(),
-                List.of(new ReservationLogDto(1L, ReservationStatus.PENDING_APPROVAL, LocalDateTime.now())),
+                List.of(new ReservationLogDto(1L, ReservationStatus.PENDING_APPROVAL, LocalDateTime.now(), "테스트 유저")),
                 50000
         );
 

@@ -25,6 +25,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -69,6 +70,15 @@ public class PostController implements PostApi {
         Long memberId = (user != null) ? user.getId() : null;
 
         PostDetailResBody body = this.postService.getPostById(id, memberId);
+
+        return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "성공", body));
+    }
+
+    @GetMapping("/{id}/reserved-dates")
+    public ResponseEntity<RsData<List<LocalDateTime>>> getReservedDates(
+            @PathVariable Long id
+    ) {
+        List<LocalDateTime> body = this.postService.getReservedDates(id);
 
         return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "성공", body));
     }
