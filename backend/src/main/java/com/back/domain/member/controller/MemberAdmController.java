@@ -1,5 +1,6 @@
 package com.back.domain.member.controller;
 
+import com.back.domain.member.dto.MemberBannedResBody;
 import com.back.domain.member.dto.MemberDto;
 import com.back.domain.member.service.MemberService;
 import com.back.global.rsData.RsData;
@@ -18,20 +19,20 @@ public class MemberAdmController implements MemberAdmApi {
     private final MemberService memberService;
 
     @PatchMapping("/{id}/ban")
-    public ResponseEntity<RsData<MemberDto>> banMember(
+    public ResponseEntity<RsData<MemberBannedResBody>> banMember(
             @PathVariable Long id
     ) {
-        MemberDto memberDto = memberService.banMember(id);
-        RsData<MemberDto> response = new RsData<>(HttpStatus.OK, "회원이 제재되었습니다.", memberDto);
+        MemberBannedResBody memberBannedResBody = memberService.banMember(id);
+        RsData<MemberBannedResBody> response = new RsData<>(HttpStatus.OK, "회원이 제재되었습니다.", memberBannedResBody);
         return ResponseEntity.ok(response);
     }
 
     @PatchMapping("/{id}/unban")
-    public ResponseEntity<RsData<MemberDto>> unbanMember(
+    public ResponseEntity<RsData<MemberBannedResBody>> unbanMember(
             @PathVariable Long id
     ) {
-        MemberDto memberDto = memberService.unbanMember(id);
-        RsData<MemberDto> response = new RsData<>(HttpStatus.OK, "회원 제재가 해제되었습니다.", memberDto);
+        MemberBannedResBody memberBannedResBody = memberService.unbanMember(id);
+        RsData<MemberBannedResBody> response = new RsData<>(HttpStatus.OK, "회원 제재가 해제되었습니다.", memberBannedResBody);
         return ResponseEntity.ok(response);
     }
 }

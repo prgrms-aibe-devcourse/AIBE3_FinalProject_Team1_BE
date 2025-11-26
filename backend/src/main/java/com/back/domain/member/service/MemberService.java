@@ -1,6 +1,7 @@
 package com.back.domain.member.service;
 
 import com.back.domain.member.common.MemberRole;
+import com.back.domain.member.dto.MemberBannedResBody;
 import com.back.domain.member.dto.MemberDto;
 import com.back.domain.member.dto.MemberJoinReqBody;
 import com.back.domain.member.dto.MemberUpdateReqBody;
@@ -82,24 +83,24 @@ public class MemberService {
     }
 
     @Transactional
-    public MemberDto banMember(Long memberId) {
+    public MemberBannedResBody banMember(Long memberId) {
         Member member = getById(memberId);
         if (member.isBanned()) {
             throw new ServiceException(HttpStatus.BAD_REQUEST, "이미 차단된 회원입니다.");
         }
         member.ban();
         memberRepository.save(member);
-        return new MemberDto(member);
+        return MemberBannedResBody.of(member);
     }
 
     @Transactional
-    public MemberDto unbanMember(Long id) {
+    public MemberBannedResBody unbanMember(Long id) {
         Member member = getById(id);
         if (!member.isBanned()) {
             throw new ServiceException(HttpStatus.BAD_REQUEST, "차단되지 않은 회원입니다.");
         }
         member.unban();
         memberRepository.save(member);
-        return new MemberDto(member);
+        return MemberBannedResBody.of(member);
     }
 }
