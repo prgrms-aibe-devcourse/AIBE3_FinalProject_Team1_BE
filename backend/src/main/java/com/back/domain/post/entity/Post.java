@@ -131,4 +131,11 @@ public class Post extends BaseEntity {
         this.options.addAll(newPostOptions);
     }
 
+    public void ban() {
+        this.isBanned = true;
+    }
+
+    public void unban() {
+        this.isBanned = false;
+    }
 }

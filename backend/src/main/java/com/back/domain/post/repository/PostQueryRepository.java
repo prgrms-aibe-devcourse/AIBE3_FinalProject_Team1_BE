@@ -40,7 +40,8 @@ public class PostQueryRepository extends CustomQuerydslRepositorySupport {
                         .where(
                                 containsKeyword(keyword),
                                 equalsCategoryId(categoryId),
-                                inRegionIds(regionIds)
+                                inRegionIds(regionIds),
+                                post.isBanned.isFalse() // 제재 처리 된 게시물 제외
                         )
                         .distinct(),
                 countQuery -> countQuery

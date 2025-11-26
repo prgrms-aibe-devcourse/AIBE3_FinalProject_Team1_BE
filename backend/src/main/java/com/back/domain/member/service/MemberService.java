@@ -1,6 +1,8 @@
 package com.back.domain.member.service;
 
 import com.back.domain.member.common.MemberRole;
+import com.back.domain.member.dto.MemberBannedResBody;
+import com.back.domain.member.dto.MemberDto;
 import com.back.domain.member.dto.MemberJoinReqBody;
 import com.back.domain.member.dto.MemberUpdateReqBody;
 import com.back.domain.member.entity.Member;
@@ -11,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Optional;
@@ -77,5 +80,25 @@ public class MemberService {
 
     public boolean existsByNickname(String nickname) {
         return memberRepository.existsByNickname(nickname);
+    }
+
+    @Transactional
+    public MemberBannedResBody banMember(Long memberId) {
+        Member member = getById(memberId);
+        if (member.isBanned()) {
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "이미 차단된 회원입니다.");
+        }
+        member.ban();
+        return MemberBannedResBody.of(member);
+    }
+
+    @Transactional
+    public MemberBannedResBody unbanMember(Long id) {
+        Member member = getById(id);
+        if (!member.isBanned()) {
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "차단되지 않은 회원입니다.");
+        }
+        member.unban();
+        return MemberBannedResBody.of(member);
     }
 }

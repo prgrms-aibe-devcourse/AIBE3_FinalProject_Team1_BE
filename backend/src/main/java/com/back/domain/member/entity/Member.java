@@ -93,4 +93,12 @@ public class Member extends BaseEntity {
     public void updateProfileImage(String profileImgUrl) {
         this.profileImgUrl = profileImgUrl;
     }
+
+    public void ban() {
+        this.isBanned = true;
+    }
+
+    public void unban() {
+        this.isBanned = false;
+    }
 }

@@ -51,4 +51,12 @@ public class Review extends BaseEntity {
         );
     }
 
+    public void ban() {
+        this.isBanned = true;
+    }
+
+    public void unban() {
+        this.isBanned = false;
+    }
+
 }

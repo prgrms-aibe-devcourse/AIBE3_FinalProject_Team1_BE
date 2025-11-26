@@ -2,6 +2,7 @@ package com.back.domain.review.service;
 
 import com.back.domain.reservation.entity.Reservation;
 import com.back.domain.reservation.repository.ReservationRepository;
+import com.back.domain.review.dto.ReviewBannedResBody;
 import com.back.domain.review.dto.ReviewDto;
 import com.back.domain.review.dto.ReviewWriteReqBody;
 import com.back.domain.review.entity.Review;
@@ -48,5 +49,29 @@ public class ReviewService {
 
     public Page<ReviewDto> getMemberReviews(Pageable pageable, Long memberId) {
         return reviewQueryRepository.getMemberReceivedReviews(pageable, memberId);
+    }
+
+    @Transactional
+    public ReviewBannedResBody banReview(Long id) {
+        Review review = reviewRepository.findById(id).orElseThrow(
+                () -> new ServiceException(HttpStatus.NOT_FOUND, "리뷰를 찾을 수 없습니다.")
+        );
+        if (review.isBanned()) {
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "이미 제재된 리뷰입니다.");
+        }
+        review.ban();
+        return ReviewBannedResBody.of(review);
+    }
+
+    @Transactional
+    public ReviewBannedResBody unbanReview(Long id) {
+        Review review = reviewRepository.findById(id).orElseThrow(
+                () -> new ServiceException(HttpStatus.NOT_FOUND, "리뷰를 찾을 수 없습니다.")
+        );
+        if (!review.isBanned()) {
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "제재되지 않은 리뷰입니다.");
+        }
+        review.unban();
+        return ReviewBannedResBody.of(review);
     }
 }

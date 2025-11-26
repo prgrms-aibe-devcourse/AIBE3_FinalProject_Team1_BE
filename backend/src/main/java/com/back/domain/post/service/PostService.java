@@ -6,10 +6,7 @@ import com.back.domain.member.entity.Member;
 import com.back.domain.member.repository.MemberRepository;
 import com.back.domain.post.dto.req.PostCreateReqBody;
 import com.back.domain.post.dto.req.PostUpdateReqBody;
-import com.back.domain.post.dto.res.PostCreateResBody;
-import com.back.domain.post.dto.res.PostDetailResBody;
-import com.back.domain.post.dto.res.PostImageResBody;
-import com.back.domain.post.dto.res.PostListResBody;
+import com.back.domain.post.dto.res.*;
 import com.back.domain.post.entity.*;
 import com.back.domain.post.repository.*;
 import com.back.domain.region.entity.Region;
@@ -115,7 +112,7 @@ public class PostService {
 
         if (regionIds != null && regionIds.isEmpty()) regionIds = null;
 
-        Page<Post> postPage = hasFilter ? this.postQueryRepository.findFilteredPosts(keyword, categoryId, regionIds, pageable) : this.postRepository.findAll(pageable);
+        Page<Post> postPage = hasFilter ? this.postQueryRepository.findFilteredPosts(keyword, categoryId, regionIds, pageable) : this.postRepository.findByIsBannedFalse(pageable);
 
         Page<PostListResBody> mappedPage = postPage.map(post -> {
 
@@ -317,5 +314,31 @@ public class PostService {
 
     public List<LocalDateTime> getReservedDates(Long id) {
         return postQueryRepository.findReservedDatesFromToday(id);
+    }
+
+    @Transactional
+    public PostBannedResBody banPost(Long postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(
+                        () -> new ServiceException(HttpStatus.NOT_FOUND, "%d번 글은 존재하지 않는 게시글입니다.".formatted(postId))
+                        );
+        if (post.getIsBanned()) {
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "%d번 글은 이미 차단되었습니다.".formatted(postId));
+        }
+        post.ban();
+        return PostBannedResBody.of(post);
+    }
+
+    @Transactional
+    public PostBannedResBody unbanPost(Long postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(
+                        () -> new ServiceException(HttpStatus.NOT_FOUND, "%d번 글은 존재하지 않는 게시글입니다.".formatted(postId))
+                );
+        if (!post.getIsBanned()) {
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "%d번 글은 제재되지 않았습니다.".formatted(postId));
+        }
+        post.unban();
+        return PostBannedResBody.of(post);
     }
 }
