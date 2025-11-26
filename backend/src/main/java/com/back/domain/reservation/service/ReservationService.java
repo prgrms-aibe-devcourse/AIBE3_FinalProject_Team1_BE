@@ -344,8 +344,10 @@ public class ReservationService {
                 .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, "해당 예약을 찾을 수 없습니다."));
 
         // 역할 확인
-        boolean isGuest = reservation.getAuthor().getId().equals(memberId);
-        boolean isHost = reservation.getPost().getAuthor().getId().equals(memberId);
+        Long guestId = reservation.getAuthor().getId();
+        Long hostId = reservation.getPost().getAuthor().getId();
+        boolean isGuest = guestId.equals(memberId);
+        boolean isHost = hostId.equals(memberId);
 
         if (!isGuest && !isHost) {
             throw new ServiceException(HttpStatus.FORBIDDEN, "해당 예약의 상태를 변경할 권한이 없습니다.");
@@ -400,6 +402,14 @@ public class ReservationService {
         // 상태 전환 로그 저장
         ReservationLog log = new ReservationLog(reservation.getStatus(), reservation, memberId);
         reservationLogRepository.save(log);
+
+        // 알림 발행
+        NotificationType notificationType = NotificationType.reservationStatusToNotificationType(reqBody.status());
+        if (isGuest) {
+            notificationService.saveAndSendNotification(hostId, notificationType, reservationId);
+        } else {
+            notificationService.saveAndSendNotification(guestId, notificationType, reservationId);
+        }
 
         return convertToReservationDto(r);
     }

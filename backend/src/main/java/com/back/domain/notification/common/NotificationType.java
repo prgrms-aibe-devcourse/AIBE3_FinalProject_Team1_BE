@@ -1,5 +1,7 @@
 package com.back.domain.notification.common;
 
+import com.back.domain.reservation.common.ReservationStatus;
+
 public enum NotificationType {
 
     // 상태 변경 알림
@@ -32,6 +34,11 @@ public enum NotificationType {
 
     public GroupType getGroupType() {
         return groupType;
+    }
+
+    public static NotificationType reservationStatusToNotificationType(ReservationStatus status) {
+        String typeName = "RESERVATION_" + status.name();
+        return NotificationType.valueOf(typeName);
     }
 
     public enum GroupType {
