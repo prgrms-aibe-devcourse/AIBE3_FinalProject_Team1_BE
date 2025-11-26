@@ -86,7 +86,7 @@ public class Member extends BaseEntity {
     public void updateMember(MemberUpdateReqBody reqBody) {
         this.address1 = reqBody.address1();
         this.address2 = reqBody.address2();
-        this.nickname = reqBody.nickname();
+        this.name = reqBody.name();
         this.phoneNumber = reqBody.phoneNumber();
     }
 

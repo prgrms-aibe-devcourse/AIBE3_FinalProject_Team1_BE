@@ -9,7 +9,7 @@ public record MemberUpdateReqBody(
         @NotBlank
         String address2,
         @NotBlank
-        String nickname,
+        String name,
         @NotBlank
         String phoneNumber,
         @NotNull
