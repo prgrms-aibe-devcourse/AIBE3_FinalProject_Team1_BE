@@ -146,15 +146,20 @@ public class PostController implements PostApi {
             @RequestParam String query,
             @AuthenticationPrincipal SecurityUser user
     ) {
+
         Long memberId = (user != null ? user.getId() : null);
 
-        List<PostListResBody> posts = postSearchService.searchPosts(query, memberId);
-        String answer = postSearchService.searchWithLLM(query, posts);
+
+        List<PostListResBody> recommendedPosts = postSearchService.searchPosts(query, memberId);
+
+
+        String answer = postSearchService.searchWithLLM(query, recommendedPosts);
+
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("query", query);
         result.put("answer", answer);
-        result.put("posts", posts);
+        result.put("posts", recommendedPosts);
 
         return ResponseEntity.ok(result);
     }
