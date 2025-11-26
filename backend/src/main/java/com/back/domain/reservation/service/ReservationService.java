@@ -17,6 +17,7 @@ import com.back.domain.reservation.entity.ReservationOption;
 import com.back.domain.reservation.repository.ReservationLogRepository;
 import com.back.domain.reservation.repository.ReservationQueryRepository;
 import com.back.domain.reservation.repository.ReservationRepository;
+import com.back.domain.reservation.scheduler.ReservationRemindScheduler;
 import com.back.domain.review.repository.ReviewQueryRepository;
 import com.back.global.exception.ServiceException;
 import com.back.standard.util.page.PagePayload;
@@ -41,6 +42,8 @@ public class ReservationService {
     private final ReviewQueryRepository reviewQueryRepository;
     private final MemberRepository memberRepository;
     private final PostService postService;
+
+    private final ReservationRemindScheduler reminderScheduler;
 
     public ReservationDto create(CreateReservationReqBody reqBody, Member author) {
         Post post = postService.getById(reqBody.postId());
@@ -91,6 +94,13 @@ public class ReservationService {
         }
 
         Reservation r = reservationRepository.save(reservation);
+
+        // 스케줄러에 등록
+        reminderScheduler.scheduleReturnReminder(
+                r.getId(),
+                r.getReservationEndAt()
+        );
+
         return convertToReservationDto(r);
     }
 

@@ -1,5 +1,7 @@
 package com.back.domain.notification.service;
 
+import com.back.domain.member.entity.Member;
+import com.back.domain.member.repository.MemberRepository;
 import com.back.domain.notification.common.NotificationData;
 import com.back.domain.notification.common.NotificationType;
 import com.back.domain.notification.dto.NotificationResBody;
@@ -32,6 +34,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class NotificationService {
 
+    private final MemberRepository memberRepository;
     private final NotificationRepository notificationRepository;
     private final NotificationQueryRepository notificationQueryRepository;
     private final ReservationQueryRepository reservationQueryRepository;
@@ -41,12 +44,14 @@ public class NotificationService {
     private static final Long TIMEOUT = 60L * 1000 * 60; // 1시간
 
     public NotificationService(
+            MemberRepository memberRepository,
             NotificationRepository notificationRepository,
             NotificationQueryRepository notificationQueryRepository,
             ReservationQueryRepository reservationQueryRepository,
             List<NotificationDataMapper<? extends NotificationData>> mappers,
             EmitterRepository emitterRepository
     ) {
+        this.memberRepository = memberRepository;
         this.notificationRepository = notificationRepository;
         this.notificationQueryRepository = notificationQueryRepository;
         this.reservationQueryRepository = reservationQueryRepository;
@@ -93,6 +98,20 @@ public class NotificationService {
         emitter.onCompletion(() -> emitterRepository.deleteEmitter(memberId, emitterId));
         emitter.onTimeout(() -> emitterRepository.deleteEmitter(memberId, emitterId));
         emitter.onError(e -> emitterRepository.deleteEmitter(memberId, emitterId));
+    }
+
+    @Transactional
+    public void saveAndSendNotification(Long targetMemberId, NotificationType type, Long targetId) {
+        Member member = memberRepository.findById(targetMemberId)
+                .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND,
+                        "멤버(%d)를 찾을 수 없습니다.".formatted(targetMemberId)));
+
+        Notification notification = Notification.create(type, targetId, member);
+        Notification saved = notificationRepository.save(notification);
+
+        NotificationResBody<?> dto = EntityToResBody(saved);
+
+        sendNotification(targetMemberId, dto);
     }
 
     public void sendNotification(Long targetMemberId, NotificationResBody<? extends NotificationData> message) {
@@ -190,6 +209,12 @@ public class NotificationService {
             }
         }
         return resBodyList;
+    }
+
+    private NotificationResBody<?> EntityToResBody(Notification notification) {
+        Map<NotificationType.GroupType, Map<Long, ?>> loaded = loadEntitiesByGroup(List.of(notification));
+        List<NotificationResBody<? extends NotificationData>> bodies = mapToResBody(List.of(notification), loaded);
+        return bodies.get(0);
     }
 }
 

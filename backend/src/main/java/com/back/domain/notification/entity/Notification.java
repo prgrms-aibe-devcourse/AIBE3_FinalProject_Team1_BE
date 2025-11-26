@@ -27,4 +27,14 @@ public class Notification extends BaseEntity {
     public void updateToRead() {
         isRead = true;
     }
+
+    public static Notification create(NotificationType type, Long targetId, Member member) {
+        Notification notification = new Notification();
+        notification.type = type;
+        notification.targetId = targetId;
+        notification.member = member;
+        notification.isRead = false;
+
+        return notification;
+    }
 }
