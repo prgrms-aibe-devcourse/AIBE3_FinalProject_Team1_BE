@@ -104,6 +104,8 @@ public class ReservationService {
 
         Reservation r = reservationRepository.save(reservation);
 
+        notificationService.saveAndSendNotification(post.getAuthor().getId(), NotificationType.RESERVATION_PENDING_APPROVAL, r.getId());
+
         return convertToReservationDto(r);
     }
 
