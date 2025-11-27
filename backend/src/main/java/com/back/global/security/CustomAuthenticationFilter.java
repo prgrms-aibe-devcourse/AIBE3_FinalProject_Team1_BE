@@ -77,9 +77,9 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
                     filterChain.doFilter(request, response);
                     return;
                 } catch (ServiceException e) {
-                    // 회복 실패 → 401
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    return;
+                    System.out.println("그냥 찍어 보는 건데여");
+                    cookieHelper.deleteCookie("accessToken");
+                    cookieHelper.deleteCookie("refreshToken");
                 }
             }
 
