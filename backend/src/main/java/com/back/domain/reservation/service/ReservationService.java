@@ -576,21 +576,24 @@ public class ReservationService {
     }
 
     private void updateClaimingStatus() {
-        List<Reservation> reservations = reservationRepository.findByStatus(ReservationStatus.CLAIMING);
+        List<Reservation> reservations = reservationQueryRepository.findWithPostAndAuthorByStatus(ReservationStatus.CLAIMING);
 
         reservations.forEach(reservation -> {
             reservation.changeStatus(ReservationStatus.CLAIM_COMPLETED);
-            // Dirty Checking 작동
+            notificationService.saveAndSendNotification(reservation.getAuthor().getId(), NotificationType.RESERVATION_CLAIM_COMPLETED, reservation.getId());
+            notificationService.saveAndSendNotification(reservation.getPost().getAuthor().getId(), NotificationType.RESERVATION_CLAIM_COMPLETED, reservation.getId());
         });
 
         log.info("CLAIMING → CLAIM_COMPLETED 상태 변경 완료 - 처리 건수: {}", reservations.size());
     }
 
     private void updatePendingRefundStatus() {
-        List<Reservation> reservations = reservationRepository.findByStatus(ReservationStatus.PENDING_REFUND);
+        List<Reservation> reservations = reservationQueryRepository.findWithPostAndAuthorByStatus(ReservationStatus.CLAIMING);
 
         reservations.forEach(reservation -> {
             reservation.changeStatus(ReservationStatus.REFUND_COMPLETED);
+            notificationService.saveAndSendNotification(reservation.getAuthor().getId(), NotificationType.RESERVATION_REFUND_COMPLETED, reservation.getId());
+            notificationService.saveAndSendNotification(reservation.getPost().getAuthor().getId(), NotificationType.RESERVATION_REFUND_COMPLETED, reservation.getId());
         });
 
         log.info("PENDING_REFUND → REFUND_COMPLETED 상태 변경 완료 - 처리 건수: {}", reservations.size());

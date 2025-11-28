@@ -165,7 +165,18 @@ public class ReservationQueryRepository extends CustomQuerydslRepositorySupport
         );
     }
 
-
+    public List<Reservation> findWithPostAndAuthorByStatus(ReservationStatus status) {
+        return select(reservation)
+                .from(reservation)
+                .leftJoin(reservation.author, new QMember("reservationAuthor"))
+                .fetchJoin()
+                .leftJoin(reservation.post, post)
+                .fetchJoin()
+                .leftJoin(post.author, new QMember("postAuthor"))
+                .fetchJoin()
+                .where(reservation.status.eq(status))
+                .fetch();
+    }
 
     // ===== 동적 조건 메서드 (Report 예시 스타일) =====
 
