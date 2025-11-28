@@ -100,6 +100,17 @@ jobs:
           ./gradlew --version
           java -version
 
+      - name: Initialize database schema with JPA
+        env:
+          SPRING__DATASOURCE__URL: jdbc:mariadb://localhost:3306/chwimeet?currentSchema=chwimeet
+          SPRING__DATASOURCE__USERNAME: root
+          SPRING__DATASOURCE__PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          echo "=== Initializing DB Schema with JPA ==="
+          # JPA로 스키마 생성 (compileJava 시 자동 실행됨)
+          ./gradlew compileJava --no-daemon
+          echo "✅ Schema initialized"
+
       # JOOQ 생성 (환경변수 직접 전달)
       - name: Generate JOOQ sources
         env:
