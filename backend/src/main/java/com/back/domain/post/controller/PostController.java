@@ -1,29 +1,5 @@
 package com.back.domain.post.controller;
 
-import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
-
 import com.back.domain.post.dto.req.PostCreateReqBody;
 import com.back.domain.post.dto.req.PostUpdateReqBody;
 import com.back.domain.post.dto.res.PostCreateResBody;
@@ -35,9 +11,23 @@ import com.back.domain.review.service.ReviewSummaryService;
 import com.back.global.rsData.RsData;
 import com.back.global.security.SecurityUser;
 import com.back.standard.util.page.PagePayload;
-
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/posts")
@@ -153,7 +143,7 @@ public class PostController implements PostApi {
 	}
 
 	@GetMapping("/search/ai")
-	public ResponseEntity<?> searchPostsWithAi(
+	public ResponseEntity<RsData<?>> searchPostsWithAi(
 		@RequestParam String query,
 		@AuthenticationPrincipal SecurityUser user
 	) {
@@ -169,7 +159,7 @@ public class PostController implements PostApi {
 		result.put("answer", answer);
 		result.put("posts", recommendedPosts);
 
-		return ResponseEntity.ok(result);
+		return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "AI 검색 결과입니다.", result));
 	}
 
 }
