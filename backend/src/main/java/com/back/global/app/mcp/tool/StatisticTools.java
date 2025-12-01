@@ -2,10 +2,15 @@ package com.back.global.app.mcp.tool;
 
 import com.back.domain.reservation.repository.ReservationQueryRepository;
 import com.back.global.app.mcp.dto.CategoryStatsDto;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.slack.api.Slack;
+import com.slack.api.methods.response.chat.ChatPostMessageResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -17,14 +22,34 @@ import java.util.List;
 @RequiredArgsConstructor
 public class StatisticTools {
 
+    @Value("${slack.user-token}")
+    private String slackUserToken;
+
+    @Value("${slack.channel-id}")
+    private String slackChannelId;
+
+    @Value("${slack.claude-member-id}")
+    private String slackClaudeMemberId;
+
+    private final ObjectMapper objectMapper;
     private final ReservationQueryRepository reservationQueryRepository;
 
     @Tool(description = """
-            두 기간의 카테고리 통계를 비교합니다.
-            ISO-8601 날짜 형식(YYYY-MM-DD)으로 기간을 지정하세요.
-            사용자가 자연어(이번주, 지난주 등)로 요청하면 오늘 날짜를 기준으로 계산하여 변환하세요.
+            P2P 대여 서비스의 두 기간 동안 발생한 대여 거래를 카테고리별로 비교 분석합니다.
+                - 통계는 플랫폼에서 발생한 '대여 거래'를 집계한 것입니다
+                - 각 카테고리는 대여된 물품/서비스의 종류를 나타냅니다
+                - 금액은 대여료(렌탈비)를 의미합니다
+            
+                ISO-8601 날짜 형식(YYYY-MM-DD)으로 기간을 지정하세요.
+                사용자가 자연어(이번주, 지난주 등)로 요청하면 오늘 날짜를 기준으로 계산하여 변환하세요.
+            
+                응답 시 다음 사항을 명확히 해주세요:
+                1. 이것은 '플랫폼 대여 거래 통계'임을 명시
+                2. '지출'이 아닌 '대여료', '거래액' 용어 사용
+                3. '소비'가 아닌 '대여', '이용' 용어 사용
+                4. 대여 서비스 관점에서 인사이트 제공 (예: 인기 카테고리, 대여 패턴 등)
             """)
-    public List<CategoryStatsDto> compareStats(
+    public String compareCategoryStats(
             @ToolParam(description = """
                     첫 번째 비교 기간의 시작 날짜 (ISO-8601 형식: YYYY-MM-DD)
                     
@@ -48,17 +73,69 @@ public class StatisticTools {
                     - '이번달': 오늘 날짜
                     - '지난달': 지난 달 마지막 날
                     """)
-            LocalDate secondPeriod)
-    {
-        long start = System.currentTimeMillis();
+            LocalDate secondPeriod) {
+        try {
+            long start = System.currentTimeMillis();
 
-        LocalDateTime from = firstPeriod.atStartOfDay();
-        LocalDateTime to = secondPeriod.atTime(23, 59, 59);
-        List<CategoryStatsDto> stats = reservationQueryRepository.getCategoryStats(from, to);
+            LocalDateTime from = firstPeriod.atStartOfDay();
+            LocalDateTime to = secondPeriod.atTime(23, 59, 59);
+            List<CategoryStatsDto> stats = reservationQueryRepository.getCategoryStats(from, to);
 
-        long end = System.currentTimeMillis();
-        log.info("카테고리별 통계 응답 시간: {}ms", (end - start));
+            Slack slack = Slack.getInstance();
 
-        return stats;
+            // 1. 메인 메시지 (스레드 시작점)
+            ChatPostMessageResponse mainResponse = slack.methods(slackUserToken)
+                                                        .chatPostMessage(request -> request
+                                                                .channel(slackChannelId)
+                                                                .text(String.format("📊 *카테고리별 통계 분석*\n기간: %s ~ %s", firstPeriod, secondPeriod))
+                                                        );
+            String threadTs = mainResponse.getTs();
+
+            // 2. JSON 데이터 생성
+            String jsonData = objectMapper.writerWithDefaultPrettyPrinter()
+                                          .writeValueAsString(stats);
+
+            // 3. 스레드에 분석 요청 프롬프트
+            String prompt = getPrompt(jsonData);
+
+            slack.methods(slackUserToken)
+                 .chatPostMessage(request -> request
+                         .channel(slackChannelId)
+                         .threadTs(threadTs)
+                         .text(prompt)
+                 );
+
+            long end = System.currentTimeMillis();
+            log.info("카테고리별 통계 응답 시간: {}ms", (end - start));
+
+            return "통계 데이터가 Claude에게 전달되었습니다.";
+        } catch (Exception e) {
+            log.error("카테고리 통계 Slack 전송 중 오류 발생", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    @NotNull
+    private String getPrompt(String jsonData) {
+        String codeBlock = "```\n" + jsonData + "\n```";
+        return String.format(
+"""
+<@%s> P2P 대여 플랫폼 카테고리별 통계 분석을 요청합니다.
+
+⚠️ 중요 컨텍스트:
+• 이것은 대여 서비스 플랫폼의 거래 통계입니다
+• '지출/소비'가 아닌 '대여료/거래액', '대여/이용'으로 표현해주세요
+• 플랫폼 전체 거래 관점으로 분석해주세요
+
+📋 분석 요청사항:
+1. 📊 전체 대여 거래 현황 (총 대여료, 거래 건수)
+2. 📈 카테고리별 대여 트렌드 (인기 카테고리, 증감률)
+3. 💡 플랫폼 인사이트 (대여 패턴, 시즌 트렌드 등)
+
+📎 상세 데이터는 아래 첨부된 JSON 데이터를 참조해주세요.
+
+%s
+""", slackClaudeMemberId, codeBlock
+        );
     }
 }
