@@ -83,65 +83,17 @@ jobs:
         run: chmod +x ./gradlew
 
       # ========================================
-      # 🚀 JOOQ 캐시 복원 (CI에서 생성한 캐시 사용)
+      # 🚀 JOOQ generated sources 캐시 복원 (CD)
       # ========================================
       - name: Restore JOOQ generated sources from cache
         id: cache-jooq
         uses: actions/cache/restore@v4
         with:
           path: backend/src/generated
+          # 🔥 CI와 완전히 똑같이 맞추기!!
           key: jooq-${{ hashFiles('backend/src/main/resources/db/migration/*.sql', 'backend/build.gradle.kts') }}
           restore-keys: |
             jooq-
-
-      # ========================================
-      # 캐시 미스 시 JOOQ 생성
-      # ========================================
-      - name: Start MariaDB (if cache miss)
-        if: steps.cache-jooq.outputs.cache-hit != 'true'
-        run: |
-          docker compose up -d mariadb
-          echo "⏳ Waiting for MariaDB to be ready..."
-          sleep 10
-
-      - name: Wait for MariaDB (if cache miss)
-        if: steps.cache-jooq.outputs.cache-hit != 'true'
-        env:
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-        run: |
-          until docker exec chwimeet-mariadb mariadb-admin ping -h localhost -uroot -p${DB_PASSWORD} --silent; do
-            echo "Waiting for MariaDB..."
-            sleep 2
-          done
-          echo "✅ MariaDB is ready"
-
-      - name: Generate JOOQ sources (if cache miss)
-        if: steps.cache-jooq.outputs.cache-hit != 'true'
-        env:
-          SPRING__DATASOURCE__USERNAME: root
-          SPRING__DATASOURCE__PASSWORD: ${{ secrets.DB_PASSWORD }}
-          SPRING__DATASOURCE__URL: jdbc:mariadb://localhost:3306/chwimeet
-        run: |
-          echo "=== Starting JOOQ Generation ==="
-          echo "Checking environment variables (masked):"
-          echo "SPRING__DATASOURCE__USERNAME=$SPRING__DATASOURCE__USERNAME"
-          echo "SPRING__DATASOURCE__URL=$SPRING__DATASOURCE__URL"
-          echo ""
-          echo "⚙️  JOOQ plugin will automatically run Flyway migration"
-          
-          # Run with stacktrace for better error messages
-          ./gradlew generateJooqClasses --no-daemon --stacktrace
-          
-          if [ -d "src/generated/com/back/jooq/tables" ]; then
-            echo "✅ JOOQ generated successfully"
-            ls -la src/generated/com/back/jooq/tables/
-          else
-            echo "❌ JOOQ generation failed"
-            exit 1
-          fi
-          
-          echo "=== Verifying tables in database ==="
-          docker exec chwimeet-mariadb mariadb -uroot -p${{ secrets.DB_PASSWORD }} -e "USE chwimeet; SHOW TABLES;"
 
       - name: Stop MariaDB (if started)
         if: always() && steps.cache-jooq.outputs.cache-hit != 'true'
