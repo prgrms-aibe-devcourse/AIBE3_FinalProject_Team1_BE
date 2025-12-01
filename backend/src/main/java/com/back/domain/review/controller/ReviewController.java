@@ -1,8 +1,8 @@
 package com.back.domain.review.controller;
 
 import com.back.domain.review.dto.ReviewDto;
+import com.back.domain.review.dto.ReviewSummaryDto;
 import com.back.domain.review.dto.ReviewWriteReqBody;
-import com.back.domain.review.entity.Review;
 import com.back.domain.review.service.ReviewService;
 import com.back.global.rsData.RsData;
 import com.back.global.security.SecurityUser;
@@ -32,8 +32,8 @@ public class ReviewController implements ReviewApi {
             @Valid @RequestBody ReviewWriteReqBody reqBody,
             @AuthenticationPrincipal SecurityUser securityUser
     ) {
-        Review review  = reviewService.writeReview(reservationId, reqBody, securityUser.getId());
-        RsData<ReviewDto> body = new RsData<>(HttpStatus.CREATED, "리뷰가 작성되었습니다.", new ReviewDto(review, securityUser));
+        ReviewDto review  = reviewService.writeReview(reservationId, reqBody, securityUser.getId());
+        RsData<ReviewDto> body = new RsData<>(HttpStatus.CREATED, "리뷰가 작성되었습니다.", review);
         return ResponseEntity.status(HttpStatus.CREATED).body(body);
     }
 
@@ -54,6 +54,24 @@ public class ReviewController implements ReviewApi {
     ){
         Page<ReviewDto> pages = reviewService.getMemberReviews(pageable, memberId);
         RsData<PagePayload<ReviewDto>> body = new RsData<>(HttpStatus.OK, "성공", PageUt.of(pages));
+        return ResponseEntity.ok(body);
+    }
+
+    @GetMapping("/api/v1/posts/{postId}/review-summary")
+    public ResponseEntity<RsData<ReviewSummaryDto>> getPostReviewSummary2(
+            @PathVariable Long postId
+    ){
+        ReviewSummaryDto reviewSummaryDto = reviewService.findPostReceivedReviewSummary2(postId);
+        RsData<ReviewSummaryDto> body = new RsData<>(HttpStatus.OK, "성공", reviewSummaryDto);
+        return ResponseEntity.ok(body);
+    }
+
+    @GetMapping("/api/v1/members/{memberId}/review-summary")
+    public ResponseEntity<RsData<ReviewSummaryDto>> getMemberReviewSummary2(
+            @PathVariable Long memberId
+    ){
+        ReviewSummaryDto reviewSummaryDto = reviewService.findMemberReceivedReviewSummary2(memberId);
+        RsData<ReviewSummaryDto> body = new RsData<>(HttpStatus.OK, "성공", reviewSummaryDto);
         return ResponseEntity.ok(body);
     }
 }

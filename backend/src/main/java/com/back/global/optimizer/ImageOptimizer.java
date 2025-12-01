@@ -16,7 +16,7 @@ public class ImageOptimizer {
 
     private static final int MAX_DIMENSION = 1024;
     private static final double QUALITY = 0.85;
-    private static final int MAX_IMAGE_COUNT = 3;
+    private static final int MAX_IMAGE_COUNT = 10;
 
     public List<Resource> optimizeImages(List<MultipartFile> imageFiles) {
         if (imageFiles == null || imageFiles.isEmpty()) {

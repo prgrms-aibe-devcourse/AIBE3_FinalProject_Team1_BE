@@ -14,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -25,9 +26,7 @@ import static com.back.domain.member.entity.QMember.member;
 import static com.back.domain.post.entity.QPost.post;
 import static com.back.domain.post.entity.QPostImage.postImage;
 import static com.back.domain.post.entity.QPostOption.postOption;
-import static com.back.domain.reservation.common.ReservationStatus.CLAIM_COMPLETED;
-import static com.back.domain.reservation.common.ReservationStatus.REFUND_COMPLETED;
-import static com.back.domain.reservation.common.ReservationStatus.RETURN_COMPLETED;
+import static com.back.domain.reservation.common.ReservationStatus.*;
 import static com.back.domain.reservation.entity.QReservation.reservation;
 import static com.back.domain.reservation.entity.QReservationOption.reservationOption;
 
@@ -268,5 +267,20 @@ public class ReservationQueryRepository extends CustomQuerydslRepositorySupport
                         tuple -> tuple.get(reservation.status),
                         tuple -> tuple.get(reservation.count()).intValue()
                 ));
+    }
+
+    public List<Reservation> findAllByEndAtAndStatus(LocalDate tomorrow, ReservationStatus reservationStatus) {
+        LocalDateTime start = tomorrow.atStartOfDay();
+        LocalDateTime end = tomorrow.plusDays(1).atStartOfDay();
+
+        return selectFrom(reservation)
+                .leftJoin(reservation.post, post).fetchJoin()
+                .leftJoin(reservation.author, member).fetchJoin()
+                .where(
+                        reservation.status.eq(reservationStatus),
+                        reservation.reservationEndAt.goe(start),
+                        reservation.reservationEndAt.lt(end)
+                )
+                .fetch();
     }
 }

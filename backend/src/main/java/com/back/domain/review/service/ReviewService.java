@@ -1,13 +1,16 @@
 package com.back.domain.review.service;
 
+import com.back.domain.member.entity.Member;
 import com.back.domain.notification.common.NotificationType;
 import com.back.domain.notification.service.NotificationService;
 import com.back.domain.reservation.entity.Reservation;
 import com.back.domain.reservation.repository.ReservationRepository;
 import com.back.domain.review.dto.ReviewBannedResBody;
 import com.back.domain.review.dto.ReviewDto;
+import com.back.domain.review.dto.ReviewSummaryDto;
 import com.back.domain.review.dto.ReviewWriteReqBody;
 import com.back.domain.review.entity.Review;
+import com.back.domain.review.repository.ReviewJooqRepository;
 import com.back.domain.review.repository.ReviewQueryRepository;
 import com.back.domain.review.repository.ReviewRepository;
 import com.back.global.exception.ServiceException;
@@ -23,11 +26,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final ReviewQueryRepository reviewQueryRepository;
+    private final ReviewJooqRepository reviewJooqRepository;
     private final ReservationRepository reservationRepository;
     private final NotificationService notificationService;
 
     @Transactional
-    public Review writeReview(Long reservationId, ReviewWriteReqBody reqBody, Long authorId) {
+    public ReviewDto writeReview(Long reservationId, ReviewWriteReqBody reqBody, Long authorId) {
         Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(
                 () -> new ServiceException(HttpStatus.NOT_FOUND, "예약 정보를 찾을 수 없습니다.")
         );
@@ -45,17 +49,17 @@ public class ReviewService {
         Review review = reviewRepository.save(Review.create(reservation, reqBody));
 
         notificationService.saveAndSendNotification(reservation.getPost().getAuthor().getId(), NotificationType.REVIEW_CREATED, review.getId());
-
-        return review;
+        Member author = reservation.getAuthor();
+        return new ReviewDto(review, author);
     }
 
 
     public Page<ReviewDto> getPostReviews(Pageable pageable, Long postId){
-        return reviewQueryRepository.getPostReceivedReviews(pageable, postId);
+        return reviewQueryRepository.findPostReceivedReviews(pageable, postId);
     }
 
     public Page<ReviewDto> getMemberReviews(Pageable pageable, Long memberId) {
-        return reviewQueryRepository.getMemberReceivedReviews(pageable, memberId);
+        return reviewQueryRepository.findMemberReceivedReviews(pageable, memberId);
     }
 
     @Transactional
@@ -80,5 +84,13 @@ public class ReviewService {
         }
         review.unban();
         return ReviewBannedResBody.of(review);
+    }
+
+    public ReviewSummaryDto findPostReceivedReviewSummary2(Long postId) {
+        return reviewJooqRepository.findPostReceivedReviewSummary(postId);
+    }
+
+    public ReviewSummaryDto findMemberReceivedReviewSummary2(Long memberId) {
+        return reviewJooqRepository.findMemberReceivedReviewSummary(memberId);
     }
 }

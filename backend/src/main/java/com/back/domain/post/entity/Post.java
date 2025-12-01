@@ -67,6 +67,9 @@ public class Post extends BaseEntity {
     )
     private Category category;
 
+    @Version
+    private Long embeddingVersion;
+
     public static Post of(
             String title,
             String content,
@@ -92,6 +95,7 @@ public class Post extends BaseEntity {
         post.category = category;
         post.isBanned = false;
         post.embeddingStatus = EmbeddingStatus.WAIT;
+        post.embeddingVersion = 0L;
         return post;
     }
 
@@ -113,6 +117,7 @@ public class Post extends BaseEntity {
         this.returnAddress2 = returnAddress2;
         this.deposit = deposit;
         this.fee = fee;
+        this.embeddingStatus = EmbeddingStatus.WAIT; // 수정 시 임베딩 스케줄러에 대상 포함
     }
 
     public void updateCategory(Category category) {
@@ -143,17 +148,5 @@ public class Post extends BaseEntity {
 
     public void unban() {
         this.isBanned = false;
-    }
-
-    public void pendingEmbedding() {
-        this.embeddingStatus = EmbeddingStatus.PENDING;
-    }
-
-    public void doneEmbedding() {
-        this.embeddingStatus = EmbeddingStatus.DONE;
-    }
-
-    public void waitEmbedding() {
-        this.embeddingStatus = EmbeddingStatus.WAIT;
     }
 }

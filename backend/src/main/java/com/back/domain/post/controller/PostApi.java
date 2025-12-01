@@ -1,5 +1,6 @@
 package com.back.domain.post.controller;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springdoc.core.annotations.ParameterObject;
@@ -51,6 +52,11 @@ public interface PostApi {
 		@AuthenticationPrincipal SecurityUser user
 	);
 
+	@Operation(summary = "예약된 날짜 조회 API", description = "특정 게시글의 예약된 날짜 목록을 조회합니다.")
+	ResponseEntity<RsData<List<LocalDateTime>>> getReservedDates(
+		@PathVariable Long postId
+	);
+
 	@Operation(summary = "내 게시글 목록 조회 API", description = "로그인한 사용자의 게시글 목록을 조회합니다.")
 	ResponseEntity<RsData<PagePayload<PostListResBody>>> getMyPostList(
 		@AuthenticationPrincipal SecurityUser user,
@@ -89,4 +95,10 @@ public interface PostApi {
 
 	@Operation(summary = "게시글 후기 요약 API", description = "AI가 특정 게시글의 후기 목록을 요약합니다.")
 	ResponseEntity<RsData<String>> summarizeReviews(@PathVariable Long postId);
+
+	@Operation(summary = "AI 검색 API", description = "유사 게시글을 AI로 검색하고 설명을 생성합니다.")
+	ResponseEntity<RsData<?>> searchPostsWithAi(
+		@RequestParam String query,
+		@AuthenticationPrincipal SecurityUser user
+	);
 }

@@ -81,6 +81,7 @@ class ReviewControllerTest {
     private ObjectMapper objectMapper;
 
     private Review testReview;
+    private ReviewDto testReviewDto;
     private SecurityUser testUser;
     private Reservation testReservation;
 
@@ -100,6 +101,8 @@ class ReviewControllerTest {
                 "테스트", "01012345678",
                 "서울시 강남구", "테헤란로 123", testUser.getNickname());
 
+        ReflectionTestUtils.setField(author, "id", testUser.getId());
+
         testReservation = new Reservation(
                 ReservationStatus.RETURN_COMPLETED,
                 ReservationDeliveryMethod.DIRECT,  // 또는 DELIVERY
@@ -117,6 +120,8 @@ class ReviewControllerTest {
 
         ReflectionTestUtils.setField(testReservation, "id", 1L);
         ReflectionTestUtils.setField(testReview, "id", 1L);
+
+        testReviewDto = new ReviewDto(testReview, author);
 
         // Mock accessToken 설정
         when(cookieHelper.getCookieValue("accessToken", ""))
@@ -149,7 +154,7 @@ class ReviewControllerTest {
 
         // Review 객체 반환하도록 모킹 (void가 아님!)
         when(reviewService.writeReview(eq(1L), any(ReviewWriteReqBody.class), eq(testUser.getId())))
-                .thenReturn(testReview);  // 👈 수정
+                .thenReturn(testReviewDto);  // 👈 수정
 
         // when & then
         mockMvc.perform(post("/api/v1/reviews/{reservationId}", 1L)

@@ -13,7 +13,8 @@ public record PostEmbeddingDto(
         Integer deposit,
         String receiveMethod,
         String returnMethod,
-        List<Long> regionIds
+        List<Long> regionIds,
+        Long embeddingVersion
 ) {
     public static PostEmbeddingDto from(Post post) {
         return new PostEmbeddingDto(
@@ -27,7 +28,8 @@ public record PostEmbeddingDto(
                 post.getReturnMethod().toString(),
                 post.getPostRegions().stream()
                         .map(pr -> pr.getRegion().getId())
-                        .toList()
+                        .toList(),
+                post.getEmbeddingVersion()
         );
     }
 }

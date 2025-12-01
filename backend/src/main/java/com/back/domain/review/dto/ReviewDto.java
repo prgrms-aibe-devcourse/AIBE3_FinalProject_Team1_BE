@@ -1,7 +1,7 @@
 package com.back.domain.review.dto;
 
+import com.back.domain.member.entity.Member;
 import com.back.domain.review.entity.Review;
-import com.back.global.security.SecurityUser;
 
 import java.time.LocalDateTime;
 
@@ -14,7 +14,7 @@ public record ReviewDto(
         LocalDateTime createdAt,
         ReviewAuthorDto author
 ) {
-    public ReviewDto(Review review, SecurityUser securityUser) {
+    public ReviewDto(Review review, Member member) {
         this(
                 review.getId(),
                 review.getEquipmentScore(),
@@ -22,7 +22,7 @@ public record ReviewDto(
                 review.getResponseTimeScore(),
                 review.getComment(),
                 review.getCreatedAt(),
-                new ReviewAuthorDto(securityUser.getId(), securityUser.getNickname(), null)
+                new ReviewAuthorDto(member)
         );
     }
 }

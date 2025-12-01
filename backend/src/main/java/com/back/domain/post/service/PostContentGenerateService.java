@@ -1,9 +1,9 @@
 package com.back.domain.post.service;
 
-import com.back.domain.category.dto.CategoryResBody;
 import com.back.domain.category.entity.Category;
 import com.back.domain.category.repository.CategoryRepository;
 import com.back.domain.post.dto.res.GenPostDetailResBody;
+import com.back.global.jpa.entity.BaseEntity;
 import com.back.global.optimizer.ImageOptimizer;
 import com.back.standard.util.json.JsonUt;
 import org.springframework.ai.chat.client.ChatClient;
@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -64,12 +65,11 @@ public class PostContentGenerateService {
     }
 
     private String getCategoriesJson() {
-        List<Category> categories = categoryRepository.findAllWithChildren();
+        List<Category> categories = categoryRepository.findAllByParentIsNotNull();
 
-        List<CategoryResBody> categoryResBodies = categories.stream()
-                .map(CategoryResBody::of)
-                .collect(Collectors.toList());
+        Map<Long, String> childCategories = categories.stream()
+                .collect(Collectors.toMap(BaseEntity::getId, Category::getName));
 
-        return JsonUt.toString(categoryResBodies, "[]");
+        return JsonUt.toString(childCategories  , "[]");
     }
 }

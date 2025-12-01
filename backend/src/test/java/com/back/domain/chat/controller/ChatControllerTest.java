@@ -4,6 +4,8 @@ import com.back.config.TestConfig;
 import com.back.domain.category.entity.Category;
 import com.back.domain.category.repository.CategoryRepository;
 import com.back.domain.chat.dto.CreateChatRoomReqBody;
+import com.back.domain.chat.repository.ChatMemberRepository;
+import com.back.domain.chat.repository.ChatMessageRepository;
 import com.back.domain.chat.repository.ChatRoomRepository;
 import com.back.domain.chat.service.ChatService;
 import com.back.domain.member.entity.Member;
@@ -13,6 +15,7 @@ import com.back.domain.post.common.ReturnMethod;
 import com.back.domain.post.entity.Post;
 import com.back.domain.post.repository.PostRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,8 +30,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -59,10 +60,19 @@ class ChatControllerTest {
     private ChatRoomRepository chatRoomRepository;
 
     @Autowired
+    private ChatMemberRepository chatMemberRepository;
+
+    @Autowired
+    private ChatMessageRepository chatMessageRepository;
+
+    @Autowired
     private CategoryRepository categoryRepository;
 
     @Autowired
     private ChatService chatService;
+
+    @Autowired
+    private EntityManager entityManager;
 
     private Member member1;
     private Member member2;
@@ -74,7 +84,15 @@ class ChatControllerTest {
 
     @BeforeEach
     void setUp() {
+        chatMessageRepository.deleteAll();
+        entityManager.flush();
+
+        chatMemberRepository.deleteAll();
+        entityManager.flush();
+
         chatRoomRepository.deleteAll();
+        entityManager.flush();
+
         postRepository.deleteAll();
         memberRepository.deleteAll();
 
@@ -137,19 +155,12 @@ class ChatControllerTest {
                 member4,
                 category
         ));
-
-        // member1이 여러 채팅방 생성
-        chatService.createOrGetChatRoom(post1.getId(), member1.getId());  // member1 <-> member2
-        chatService.createOrGetChatRoom(post2.getId(), member1.getId());  // member1 <-> member3
-        chatService.createOrGetChatRoom(post3.getId(), member1.getId());  // member1 <-> member4
     }
 
     @Test
     @WithUserDetails(value = "user1@test.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     @DisplayName("채팅방 생성 성공")
     void test1_createChatRoom_success() throws Exception {
-        chatRoomRepository.deleteAll();
-
         // given
         Long postId = post1.getId();
         CreateChatRoomReqBody reqBody = new CreateChatRoomReqBody(postId);
@@ -172,6 +183,7 @@ class ChatControllerTest {
     @WithUserDetails(value = "user1@test.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     @DisplayName("이미 존재하는 채팅방일 때")
     void test2_createChatRoom_alreadyExists() throws Exception {
+        chatService.createOrGetChatRoom(post1.getId(), member1.getId());  // member1 <-> member2
         // given
         Long postId = post1.getId();
         CreateChatRoomReqBody reqBody = new CreateChatRoomReqBody(postId);
@@ -233,6 +245,11 @@ class ChatControllerTest {
     @WithUserDetails(value = "user1@test.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     @DisplayName("채팅방 목록 조회 - 검색어 없음")
     void test5_getMyChatRooms_withoutKeyword() throws Exception {
+        // member1이 여러 채팅방 생성
+        chatService.createOrGetChatRoom(post1.getId(), member1.getId());  // member1 <-> member2
+        chatService.createOrGetChatRoom(post2.getId(), member1.getId());  // member1 <-> member3
+        chatService.createOrGetChatRoom(post3.getId(), member1.getId());  // member1 <-> member4
+
         // when
         ResultActions resultActions = mvc.perform(get("/api/v1/chats")
                         .param("page", "0")
@@ -256,6 +273,10 @@ class ChatControllerTest {
     @WithUserDetails(value = "user1@test.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     @DisplayName("채팅방 목록 조회 - 게시글 제목으로 검색 (텐트)")
     void test6_getMyChatRooms_searchByPostTitle_tent() throws Exception {
+        // member1이 여러 채팅방 생성
+        chatService.createOrGetChatRoom(post1.getId(), member1.getId());  // member1 <-> member2
+        chatService.createOrGetChatRoom(post2.getId(), member1.getId());  // member1 <-> member3
+        chatService.createOrGetChatRoom(post3.getId(), member1.getId());  // member1 <-> member4
         // when
         ResultActions resultActions = mvc.perform(get("/api/v1/chats")
                         .param("page", "0")
@@ -279,6 +300,10 @@ class ChatControllerTest {
     @WithUserDetails(value = "user1@test.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     @DisplayName("채팅방 목록 조회 - 게시글 제목으로 검색 (대여)")
     void test7_getMyChatRooms_searchByPostTitle_rent() throws Exception {
+        // member1이 여러 채팅방 생성
+        chatService.createOrGetChatRoom(post1.getId(), member1.getId());  // member1 <-> member2
+        chatService.createOrGetChatRoom(post2.getId(), member1.getId());  // member1 <-> member3
+        chatService.createOrGetChatRoom(post3.getId(), member1.getId());  // member1 <-> member4
         // when
         ResultActions resultActions = mvc.perform(get("/api/v1/chats")
                         .param("page", "0")
@@ -300,6 +325,10 @@ class ChatControllerTest {
     @WithUserDetails(value = "user1@test.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     @DisplayName("채팅방 목록 조회 - 상대방 닉네임으로 검색")
     void test8_getMyChatRooms_searchByMemberNickname() throws Exception {
+        // member1이 여러 채팅방 생성
+        chatService.createOrGetChatRoom(post1.getId(), member1.getId());  // member1 <-> member2
+        chatService.createOrGetChatRoom(post2.getId(), member1.getId());  // member1 <-> member3
+        chatService.createOrGetChatRoom(post3.getId(), member1.getId());  // member1 <-> member4
         // when
         ResultActions resultActions = mvc.perform(get("/api/v1/chats")
                         .param("page", "0")
@@ -323,6 +352,10 @@ class ChatControllerTest {
     @WithUserDetails(value = "user1@test.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     @DisplayName("채팅방 목록 조회 - 페이징 테스트")
     void test9_getMyChatRooms_pagination() throws Exception {
+        // member1이 여러 채팅방 생성
+        chatService.createOrGetChatRoom(post1.getId(), member1.getId());  // member1 <-> member2
+        chatService.createOrGetChatRoom(post2.getId(), member1.getId());  // member1 <-> member3
+        chatService.createOrGetChatRoom(post3.getId(), member1.getId());  // member1 <-> member4
         // 첫 페이지 (size=2)
         ResultActions resultActions = mvc.perform(get("/api/v1/chats")
                         .param("page", "0")

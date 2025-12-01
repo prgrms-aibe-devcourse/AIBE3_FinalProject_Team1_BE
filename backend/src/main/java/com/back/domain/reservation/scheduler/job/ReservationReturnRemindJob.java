@@ -12,6 +12,9 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.time.LocalDate;
+import java.util.List;
+
 @Slf4j
 @DisallowConcurrentExecution
 public class ReservationReturnRemindJob implements Job {
@@ -24,32 +27,32 @@ public class ReservationReturnRemindJob implements Job {
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
-        Long reservationId = context.getMergedJobDataMap().getLong("reservationId");
+        LocalDate tomorrow = LocalDate.now().plusDays(1);
 
-        Reservation reservation = reservationQueryRepository
-                .findByIdWithPostAndAuthor(reservationId)
-                .orElse(null);
+        List<Reservation> targets =
+                reservationQueryRepository.findAllByEndAtAndStatus(
+                        tomorrow,
+                        ReservationStatus.RENTING
+                );
 
-        if (reservation == null) {
-            log.warn("예약 정보를 찾을 수 없음 - reservationId: {}", reservationId);
+        if (targets.isEmpty()) {
+            log.info("[REMIND JOB] 알림 대상 없음");
             return;
         }
 
-        if (reservation.getStatus() != ReservationStatus.RENTING) {
-            log.info("RENTING 상태 아님 - 알림 스킵 - reservationId: {}, status: {}",
-                    reservationId, reservation.getStatus());
-            return;
-        }
+        for (Reservation reservation : targets) {
+            try {
+                Long memberId = reservation.getAuthor().getId();
+                notificationService.saveAndSendNotification(
+                        memberId,
+                        NotificationType.REMIND_RETURN_DUE,
+                        reservation.getId()
+                );
 
-        try {
-            Long memberId = reservation.getAuthor().getId();
-
-            notificationService.saveAndSendNotification(memberId, NotificationType.REMIND_RETURN_DUE, reservationId);
-            log.info("알림 전송 완료 - reservationId: {}, memberId: {}",
-                    reservationId, memberId);
-
-        } catch (Exception e) {
-            log.error("알림 전송 실패 - reservationId: {}", reservationId, e);
+                log.info("[REMIND JOB] 알림 전송 : reservationId = {}, memberId = {}", reservation.getId(), memberId);
+            } catch (Exception e) {
+                log.error("[REMIND JOB] 알림 실패 : reservationId = {}", reservation.getId(), e);
+            }
         }
     }
 }

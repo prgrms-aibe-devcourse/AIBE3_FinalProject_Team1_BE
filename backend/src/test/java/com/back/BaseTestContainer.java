@@ -25,7 +25,9 @@ public abstract class BaseTestContainer {
         registry.add("spring.datasource.url", mariaDB::getJdbcUrl);
         registry.add("spring.datasource.username", mariaDB::getUsername);
         registry.add("spring.datasource.password", mariaDB::getPassword);
+        registry.add("spring.datasource.driver-class-name", () -> "org.mariadb.jdbc.Driver"); // 추가!
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
+        registry.add("spring.jpa.properties.hibernate.dialect", () -> "org.hibernate.dialect.MariaDBDialect"); // 추가!
         registry.add("spring.ai.vectorstore.mariadb.schema-name", () -> TEST_SCHEMA);
     }
 }

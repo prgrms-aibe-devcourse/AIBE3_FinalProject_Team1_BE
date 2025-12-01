@@ -25,7 +25,7 @@ public class ReviewQueryRepository extends CustomQuerydslRepositorySupport {
         super(Review.class);
     }
 
-    public Page<ReviewDto> getPostReceivedReviews(Pageable pageable, Long postId) {
+    public Page<ReviewDto> findPostReceivedReviews(Pageable pageable, Long postId){
         return applyPagination(pageable,
                 contentQuery -> contentQuery
                         .select(Projections.constructor(ReviewDto.class,
@@ -53,11 +53,14 @@ public class ReviewQueryRepository extends CustomQuerydslRepositorySupport {
                         .from(review)
                         .join(review.reservation, reservation)
                         .join(reservation.post, post)
-                        .where(post.id.eq(postId))
+                        .where(
+                                post.id.eq(postId),
+                                review.isBanned.isFalse()
+                        )
         );
     }
 
-    public Page<ReviewDto> getMemberReceivedReviews(Pageable pageable, Long memberId) {
+    public Page<ReviewDto> findMemberReceivedReviews(Pageable pageable, Long memberId){
         return applyPagination(pageable,
                 contentQuery -> contentQuery
                         .select(Projections.constructor(ReviewDto.class,
@@ -85,7 +88,10 @@ public class ReviewQueryRepository extends CustomQuerydslRepositorySupport {
                         .from(review)
                         .join(review.reservation, reservation)
                         .join(reservation.post, post)
-                        .where(post.author.id.eq(memberId))
+                        .where(
+                                post.author.id.eq(memberId),
+                                review.isBanned.isFalse()
+                        )
         );
     }
 

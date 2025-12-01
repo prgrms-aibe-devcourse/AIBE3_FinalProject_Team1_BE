@@ -1,22 +1,46 @@
 package com.back.domain.post.service;
 
-import com.back.domain.post.common.EmbeddingStatus;
-import com.back.domain.post.dto.req.PostEmbeddingDto;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.back.domain.category.entity.Category;
 import com.back.domain.category.repository.CategoryRepository;
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.repository.MemberRepository;
 import com.back.domain.post.dto.req.PostCreateReqBody;
+import com.back.domain.post.dto.req.PostEmbeddingDto;
 import com.back.domain.post.dto.req.PostUpdateReqBody;
-import com.back.domain.post.dto.res.*;
-import com.back.domain.post.entity.*;
-import com.back.domain.post.repository.*;
+import com.back.domain.post.dto.res.PostBannedResBody;
+import com.back.domain.post.dto.res.PostCreateResBody;
+import com.back.domain.post.dto.res.PostDetailResBody;
+import com.back.domain.post.dto.res.PostImageResBody;
+import com.back.domain.post.dto.res.PostListResBody;
+import com.back.domain.post.entity.Post;
+import com.back.domain.post.entity.PostFavorite;
+import com.back.domain.post.entity.PostImage;
+import com.back.domain.post.entity.PostOption;
+import com.back.domain.post.entity.PostRegion;
+import com.back.domain.post.repository.PostFavoriteQueryRepository;
+import com.back.domain.post.repository.PostFavoriteRepository;
+import com.back.domain.post.repository.PostOptionRepository;
+import com.back.domain.post.repository.PostQueryRepository;
+import com.back.domain.post.repository.PostRepository;
 import com.back.domain.region.entity.Region;
 import com.back.domain.region.repository.RegionRepository;
 import com.back.global.exception.ServiceException;
 import com.back.global.s3.S3Uploader;
 import com.back.standard.util.page.PagePayload;
 import com.back.standard.util.page.PageUt;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -30,7 +54,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -332,6 +355,8 @@ public class PostService {
 		}
 
 		this.postRepository.delete(post);
+
+		postVectorService.deletePost(postId);
 	}
 
 	public List<LocalDateTime> getReservedDates(Long id) {
@@ -364,26 +389,24 @@ public class PostService {
 		return PostBannedResBody.of(post);
 	}
 
-	/**
-	 * 벌크 업데이트를 사용하여 효율적으로 게시글 임베딩을 처리하는 메인 배치 Job 메서드.
-	 */
 	public void embedPostsBatch() {
-		List<Post> postsToEmbed = postQueryRepository.findPostsToEmbedWithDetails();
+		List<Post> postsToEmbed = postQueryRepository.findPostsToEmbedWithDetails(100); // 한 번에 최대 100개 게시글 처리
 
 		if (postsToEmbed.isEmpty()) {
 			log.info("임베딩할 WAIT 상태의 게시글이 없습니다.");
 			return;
 		}
 
-		// ⚡️ 선점 전에 DTO로 변환 (em.clear() 후에도 안전)
+		// 1️⃣ DTO 변환 (버전 정보 포함)
 		List<PostEmbeddingDto> postDtos = postsToEmbed.stream()
-				.map(PostEmbeddingDto::from)
-				.toList();
+			.map(PostEmbeddingDto::from)
+			.toList();
 
 		List<Long> postIds = postDtos.stream()
-				.map(PostEmbeddingDto::id)
-				.toList();
+			.map(PostEmbeddingDto::id)
+			.toList();
 
+		// 2️⃣ 벌크로 선점 시도 (버전 증가)
 		long updatedCount = postTransactionService.updateStatusToPending(postIds);
 
 		if (updatedCount == 0) {
@@ -391,33 +414,34 @@ public class PostService {
 			return;
 		}
 
-		log.info("총 {}개의 게시글을 PENDING 상태로 선점했습니다.", updatedCount);
+		log.info("총 {}개의 게시글을 PENDING 상태로 선점 시도했습니다.", updatedCount);
 
-		List<Long> successIds = new ArrayList<>();
-		List<Long> failedIds = new ArrayList<>();
+		// 3️⃣ 실제로 선점된 게시글만 필터링 (낙관적 락 검증)
+		List<PostEmbeddingDto> acquiredPosts = postTransactionService
+				.verifyAcquiredPosts(postDtos);
 
-		for (PostEmbeddingDto dto : postDtos) {
+		log.info("실제 선점 성공: {}건 (다른 워커 선점: {}건)",
+				acquiredPosts.size(),
+				postDtos.size() - acquiredPosts.size());
+
+		// 4️⃣ 임베딩 처리
+		int successCount = 0;
+		int failedCount = 0;
+
+		for (PostEmbeddingDto dto : acquiredPosts) {
 			try {
 				log.info(">>> 임베딩 시작: Post ID {}", dto.id());
 				postVectorService.indexPost(dto);
+				postTransactionService.updateStatusToDone(dto.id());
 				log.info(">>> 임베딩 성공: Post ID {}", dto.id());
-				successIds.add(dto.id());
+				successCount++;
 			} catch (Exception e) {
 				log.error(">>> 임베딩 실패: Post ID {}", dto.id(), e);
-				failedIds.add(dto.id());
+				postTransactionService.updateStatusToWait(dto.id());
+				failedCount++;
 			}
 		}
 
-		if (!successIds.isEmpty()) {
-			postTransactionService.updateStatusToDone(successIds);
-			log.info("성공적으로 임베딩된 게시글 {}건을 DONE으로 변경했습니다.", successIds.size());
-		}
-
-		if (!failedIds.isEmpty()) {
-			postTransactionService.updateStatusToWait(failedIds);
-			log.warn("임베딩에 실패한 게시글 {}건을 WAIT으로 복구하여 재시도를 준비합니다.", failedIds.size());
-		}
-
-		log.info("Embedding batch finished.");
+		log.info("Embedding batch finished. 성공: {}, 실패: {}", successCount, failedCount);
 	}
 }

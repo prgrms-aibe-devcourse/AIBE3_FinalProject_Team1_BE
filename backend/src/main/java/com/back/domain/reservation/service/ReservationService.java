@@ -383,19 +383,11 @@ public class ReservationService {
                 }
             }
 
-            case RENTING -> {
-                // 대여 시작 시 스케줄러에 반납 리마인드 job 등록
-                reminderScheduler.scheduleReturnReminder(
-                    reservation.getId(),
-                    reservation.getReservationEndAt()
-                );
-                reservation.changeStatus(reqBody.status());
-            }
-
             // 단순 상태 전환 (명시적으로 나열)
             case PENDING_PAYMENT,
                  PENDING_PICKUP,
                  INSPECTING_RENTAL,
+                 RENTING,
                  RETURN_COMPLETED,
                  INSPECTING_RETURN,
                  PENDING_REFUND,

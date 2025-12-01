@@ -4,6 +4,7 @@ import com.back.global.exception.ServiceException;
 import com.back.global.rsData.RsData;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.convert.ConversionFailedException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
@@ -120,6 +121,21 @@ public class GlobalExceptionHandler {
                 new RsData<>(
                         BAD_REQUEST,
                         "회원정보를 찾을 수 없습니다."
+                ),
+                BAD_REQUEST
+        );
+    }
+
+    @ExceptionHandler(ConversionFailedException.class)
+    public ResponseEntity<RsData<Void>> handle(HttpServletRequest request, ConversionFailedException e) {
+
+        log.warn("error at [{} {}]: {}",
+                request.getMethod(), request.getRequestURI(), e.getMessage(), e);
+
+        return new ResponseEntity<>(
+                new RsData<>(
+                        BAD_REQUEST,
+                        "잘못된 요청입니다."
                 ),
                 BAD_REQUEST
         );

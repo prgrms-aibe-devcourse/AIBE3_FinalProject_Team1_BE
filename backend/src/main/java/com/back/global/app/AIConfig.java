@@ -12,24 +12,40 @@ import org.springframework.context.annotation.Primary;
 @Configuration
 public class AIConfig {
 
-    @Bean
-    @Primary
-    public ChatClient openAiChatClient(ChatModel openAiChatModel) {
-        return ChatClient.create(openAiChatModel);
-    }
+	@Bean
+	@Primary
+	public ChatClient openAiChatClient(ChatModel openAiChatModel) {
+		return ChatClient.create(openAiChatModel);
+	}
 
-    @Bean
-    public ChatClient gpt51ChatClient(OpenAiApi openAiApi) {
-        OpenAiChatOptions options = OpenAiChatOptions.builder()
-                .model("gpt-5.1")
-                .temperature(1.0)
-                .build();
+	@Bean
+	public ChatClient gpt51ChatClient(OpenAiApi openAiApi) {
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.model("gpt-5.1")
+			.temperature(1.0)
+			.build();
 
-        OpenAiChatModel chatModel = OpenAiChatModel.builder()
-                .openAiApi(openAiApi)
-                .defaultOptions(options)
-                .build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiApi(openAiApi)
+			.defaultOptions(options)
+			.build();
 
-        return ChatClient.builder(chatModel).build();
-    }
+		return ChatClient.builder(chatModel).build();
+	}
+
+	@Bean
+	public ChatClient gpt41MiniChatClient(OpenAiApi openAiApi) {
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.model("gpt-4.1-mini")
+			.temperature(1.0)
+			.build();
+
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiApi(openAiApi)
+			.defaultOptions(options)
+			.build();
+
+		return ChatClient.builder(chatModel).build();
+
+	}
 }
