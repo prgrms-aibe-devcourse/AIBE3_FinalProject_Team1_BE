@@ -111,6 +111,11 @@ cloud:
     s3:
       bucket: ${CLOUD__AWS__S3__BUCKET}
 
+slack:
+  user-token: ${SLACK__USER_TOKEN}
+  channel-id: ${SLACK__CHANNEL_ID}
+  claude-member-id: ${SLACK__CLAUDE_MEMBER_ID}
+
 management:
   endpoints:
     web:

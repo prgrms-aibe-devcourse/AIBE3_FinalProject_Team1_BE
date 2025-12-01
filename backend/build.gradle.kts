@@ -62,6 +62,8 @@ dependencies {
     annotationProcessor ("jakarta.persistence:jakarta.persistence-api:3.1.0")
     // 이미지 리사이징
     implementation("net.coobird:thumbnailator:0.4.20")
+    // Slack API
+    implementation("com.slack.api:slack-api-client:1.45.3")
 
     // Testing (테스트)
     testImplementation("org.springframework.boot:spring-boot-starter-test")
@@ -74,7 +76,7 @@ dependencies {
     // AWS S3
     implementation("software.amazon.awssdk:s3:2.25.10")
 
-    // STMP
+    // SMTP
     implementation("org.springframework.boot:spring-boot-starter-mail")
 
     // Quartz
