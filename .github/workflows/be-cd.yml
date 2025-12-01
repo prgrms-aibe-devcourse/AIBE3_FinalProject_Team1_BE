@@ -82,9 +82,90 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      # 빌드 (테스트 제외 - CI에서 이미 테스트 완료)
+      # ========================================
+      # 🚀 JOOQ 캐시 복원 (CI에서 생성한 캐시 사용)
+      # ========================================
+      - name: Restore JOOQ generated sources from cache
+        id: cache-jooq
+        uses: actions/cache/restore@v4
+        with:
+          path: backend/src/generated
+          key: jooq-${{ hashFiles('backend/src/main/resources/schema.sql', 'backend/build.gradle.kts') }}
+          restore-keys: |
+            jooq-
+
+      # ========================================
+      # 캐시 미스 시 JOOQ 생성
+      # ========================================
+      - name: Start MariaDB (if cache miss)
+        if: steps.cache-jooq.outputs.cache-hit != 'true'
+        run: |
+          docker compose up -d mariadb
+          echo "⏳ Waiting for MariaDB to be ready..."
+          sleep 10
+
+      - name: Wait for MariaDB (if cache miss)
+        if: steps.cache-jooq.outputs.cache-hit != 'true'
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          until docker exec chwimeet-mariadb mariadb-admin ping -h localhost -uroot -p${DB_PASSWORD} --silent; do
+            echo "Waiting for MariaDB..."
+            sleep 2
+          done
+          echo "✅ MariaDB is ready"
+
+      - name: Initialize database schema (if cache miss)
+        if: steps.cache-jooq.outputs.cache-hit != 'true'
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          echo "=== Loading schema from SQL file ==="
+          
+          if [ -f "src/main/resources/schema.sql" ]; then
+            docker exec -i chwimeet-mariadb mariadb -uroot -p${DB_PASSWORD} chwimeet < src/main/resources/schema.sql
+            echo "✅ Schema loaded from SQL file"
+          else
+            echo "❌ schema.sql not found"
+            exit 1
+          fi
+
+      - name: Generate JOOQ sources (if cache miss)
+        if: steps.cache-jooq.outputs.cache-hit != 'true'
+        env:
+          SPRING__DATASOURCE__USERNAME: root
+          SPRING__DATASOURCE__PASSWORD: ${{ secrets.DB_PASSWORD }}
+          SPRING__DATASOURCE__URL: jdbc:mariadb://localhost:3306/chwimeet
+        run: |
+          echo "=== Starting JOOQ Generation ==="
+          ./gradlew generateJooqClasses --no-daemon --info
+          
+          if [ -d "src/generated/com/back/jooq/tables" ]; then
+            echo "✅ JOOQ generated successfully"
+            ls -la src/generated/com/back/jooq/tables/
+          else
+            echo "❌ JOOQ generation failed"
+            exit 1
+          fi
+
+      - name: Stop MariaDB (if started)
+        if: always() && steps.cache-jooq.outputs.cache-hit != 'true'
+        run: docker compose down -v
+
+      - name: Verify JOOQ sources exist
+        run: |
+          if [ ! -d "src/generated/com/back/jooq/tables" ]; then
+            echo "❌ JOOQ sources not found!"
+            exit 1
+          fi
+          echo "✅ JOOQ sources verified"
+          ls -la src/generated/com/back/jooq/tables/
+
+      # ========================================
+      # 🚀 빌드 (테스트 제외)
+      # ========================================
       - name: Build with Gradle
-        run: ./gradlew clean bootJar -x test -x generateJooq --no-daemon
+        run: ./gradlew clean bootJar -x test --no-daemon
 
       # Docker 메타데이터 추출
       - name: Extract Docker metadata

@@ -1,8 +1,12 @@
+import org.jooq.meta.jaxb.*
+val jooqVersion = "3.20.5"
+ext["jooq.version"] = jooqVersion
+
 plugins {
     java
     id("org.springframework.boot") version "3.5.6"
     id("io.spring.dependency-management") version "1.1.7"
-    id("nu.studer.jooq") version "9.0"
+    id("dev.monosoul.jooq-docker") version "8.0.6"
     jacoco
 }
 val springAiVersion by extra("1.1.0")
@@ -37,16 +41,28 @@ dependencies {
     implementation("org.springframework.ai:spring-ai-openai")               // Embedding
     implementation("org.springframework.ai:spring-ai-rag")
     implementation("org.springframework.ai:spring-ai-starter-vector-store-mariadb")
-    implementation("org.springframework.boot:spring-boot-starter-jooq")
     implementation("org.springframework.ai:spring-ai-starter-mcp-server-webmvc")
     compileOnly("org.projectlombok:lombok")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     annotationProcessor("org.projectlombok:lombok")
     implementation("org.mariadb.jdbc:mariadb-java-client:3.5.1")
-    jooqGenerator("org.mariadb.jdbc:mariadb-java-client:3.5.1")
     runtimeOnly("com.h2database:h2")
     
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+
+    // JOOQ
+    implementation("org.jooq:jooq:${jooqVersion}")
+    jooqCodegen("org.jooq:jooq-meta:${jooqVersion}")
+    jooqCodegen("org.jooq:jooq-meta-extensions:${jooqVersion}")
+    jooqCodegen("org.jooq:jooq-codegen:${jooqVersion}")
+    compileOnly("org.jooq:jooq-codegen:${jooqVersion}")
+    compileOnly("org.jooq:jooq-meta:${jooqVersion}")
+    implementation("org.springframework.boot:spring-boot-starter-jooq")
+    jooqCodegen("org.mariadb.jdbc:mariadb-java-client:3.5.1")
+    jooqCodegen("org.flywaydb:flyway-mysql:10.20.1")
+    // flyway
+    implementation("org.flywaydb:flyway-core")
+    implementation("org.flywaydb:flyway-mysql")
     // JWT
     implementation("io.jsonwebtoken:jjwt-api:0.12.6")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
@@ -104,55 +120,70 @@ tasks.withType<Test> {
     useJUnitPlatform()
 }
 
+val dbUser: String? = System.getenv("SPRING__DATASOURCE__USERNAME")
+val dbPasswd: String? = System.getenv("SPRING__DATASOURCE__PASSWORD")
+val dbHost: String = System.getenv("DB_HOST") ?: "localhost"
+
 jooq {
-    version.set("3.19.26")
-
-    configurations {
-        create("main") {
-            jooqConfiguration.apply {
-                logging = org.jooq.meta.jaxb.Logging.WARN
-
-                jdbc.apply {
-                    driver = "org.mariadb.jdbc.Driver"
-
-                    val jooqDbUrl = System.getenv("SPRING__DATASOURCE__URL")
-                        ?: "jdbc:mariadb://localhost:3306/chwimeet"
-                    val jooqDbUser = System.getenv("SPRING__DATASOURCE__USERNAME")
-                        ?: "root"
-                    val jooqDbPassword = System.getenv("SPRING__DATASOURCE__PASSWORD")
-                        ?: System.getenv("DB_PASSWORD") ?: ""
-
-                    url = jooqDbUrl.substringBefore("?") // 쿼리스트링은 보통 필요 없음
-                    user = jooqDbUser
-                    password = jooqDbPassword
-
-                    // ✅ 디버깅: 연결 정보 출력
-                    println("=== JOOQ DB Config ===")
-                    println("URL: $url")
-                    println("USER: $user")
-                    println("PASSWORD: ${if (password.isNotEmpty()) "****" else "(empty)"}")
-                }
-
-                generator.apply {
-                    database.apply {
-                        inputSchema = "chwimeet"
-                    }
-                    target.apply {
-                        packageName = "com.back.jooq"
-                        directory = "$buildDir/generated-src/jooq/main"
-                    }
+    version = jooqVersion
+    // ✅ 환경변수가 없으면 JOOQ 설정을 스킵
+    if (dbUser != null && dbPasswd != null) {
+        withoutContainer {
+            db {
+                username = dbUser
+                password = dbPasswd
+                name = "chwimeet"
+                host = dbHost
+                port = 3306
+                jdbc {
+                    schema = "jdbc:mariadb"
+                    driverClassName = "org.mariadb.jdbc.Driver"
                 }
             }
         }
+    } else {
+        logger.warn("⚠️  DB credentials not found. JOOQ generation will be skipped.")
+        logger.warn("Set SPRING__DATASOURCE__USERNAME and SPRING__DATASOURCE__PASSWORD environment variables.")
     }
 }
 
-tasks.named("compileJava") {
-    mustRunAfter("generateJooq")
-}
+tasks {
+    generateJooqClasses {
+        // ✅ 환경변수 체크
+        onlyIf {
+            val hasCredentials = dbUser != null && dbPasswd != null
+            if (!hasCredentials) {
+                logger.warn("⚠️  Skipping JOOQ generation - DB credentials not found")
+            }
+            hasCredentials
+        }
 
-tasks.named("compileTestJava") {
-    mustRunAfter("generateJooq")
+        schemas = listOf("chwimeet")
+        basePackageName = "com.back.jooq"
+        outputDirectory = project.layout.projectDirectory.dir("src/generated")
+        includeFlywayTable = false
+
+        usingJavaConfig {
+            generate = Generate()
+                .withJavaTimeTypes(true)
+                .withDeprecated(false)
+                .withDaos(true)
+                .withFluentSetters(true)
+                .withRecords(true)
+
+            database.withForcedTypes(
+                ForcedType()
+                    .withUserType("java.lang.Long")
+                    .withTypes("int unsigned"),
+                ForcedType()
+                    .withUserType("java.lang.Integer")
+                    .withTypes("tinyint unsigned"),
+                ForcedType()
+                    .withUserType("java.lang.Integer")
+                    .withTypes("smallint unsigned")
+            )
+        }
+    }
 }
 
 // ✅ JaCoCo 버전을 Java 25를 지원하는 최신 버전으로 업데이트

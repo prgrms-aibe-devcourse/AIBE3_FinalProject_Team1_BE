@@ -24,6 +24,7 @@ HELP.md
 
 # QueryDSL generated
 backend/src/main/generated/
+backend/src/generated/
 
 # H2 Database
 db_dev.mv.db

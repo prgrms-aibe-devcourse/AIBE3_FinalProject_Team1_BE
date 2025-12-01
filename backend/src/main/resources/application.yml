@@ -27,6 +27,9 @@ spring:
       jdbc:
         time_zone: Asia/Seoul
     open-in-view: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
   mail:
     host: ${SPRING__MAIL__HOST}
     port: ${SPRING__MAIL__PORT}
