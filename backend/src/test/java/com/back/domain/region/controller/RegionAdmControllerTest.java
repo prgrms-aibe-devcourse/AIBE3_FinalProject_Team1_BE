@@ -1,6 +1,5 @@
 package com.back.domain.region.controller;
 
-import com.back.BaseTestContainer;
 import com.back.config.TestConfig;
 import com.back.domain.member.service.AuthTokenService;
 import com.back.domain.member.service.RefreshTokenStore;
@@ -42,7 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(TestConfig.class)
 @AutoConfigureMockMvc
 @Transactional
-class RegionAdmControllerTest extends BaseTestContainer {
+class RegionAdmControllerTest {
 
     @MockitoBean
     private RegionService regionService;

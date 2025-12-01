@@ -1,6 +1,5 @@
 package com.back.domain.member.controller;
 
-import com.back.BaseTestContainer;
 import com.back.config.TestConfig;
 import com.back.domain.member.common.MemberRole;
 import com.back.domain.member.dto.MemberJoinReqBody;
@@ -44,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(TestConfig.class)
 @AutoConfigureMockMvc
 @Transactional
-class MemberControllerTest extends BaseTestContainer {
+class MemberControllerTest {
     
     @MockitoBean
     private MemberService memberService;

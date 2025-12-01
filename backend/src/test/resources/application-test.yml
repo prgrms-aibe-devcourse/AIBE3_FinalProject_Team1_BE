@@ -1,3 +1,6 @@
 spring:
   autoconfigure:
     exclude: org.springframework.ai.vectorstore.mariadb.autoconfigure.MariaDbStoreAutoConfiguration
+  sql:
+    init:
+      mode: never

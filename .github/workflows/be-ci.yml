@@ -25,7 +25,7 @@ defaults:
 jobs:
   ci:
     runs-on: ubuntu-latest
-    timeout-minutes: 15  # 20분 → 15분으로 단축
+    timeout-minutes: 20
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     env:
       CI: true
@@ -68,18 +68,6 @@ jobs:
           echo "${{ secrets.DOT_ENV_CI }}" > .env
           echo "✅ .env file created"
 
-      # ========================================
-      # 🚀 최적화: JOOQ 생성 결과 캐싱
-      # ========================================
-      - name: Cache JOOQ generated sources
-        id: cache-jooq
-        uses: actions/cache@v4
-        with:
-          path: backend/build/generated-src/jooq
-          key: jooq-${{ hashFiles('backend/src/main/resources/schema.sql') }}
-          restore-keys: |
-            jooq-
-
       # Docker Compose로 MariaDB & Redis 시작
       - name: Start MariaDB and Redis
         run: |
@@ -112,14 +100,11 @@ jobs:
           ./gradlew --version
           java -version
 
-      # ========================================
-      # 🚀 최적화: schema.sql이 변경된 경우만 JOOQ 재생성
-      # ========================================
       - name: Initialize database schema
-        if: steps.cache-jooq.outputs.cache-hit != 'true'
         run: |
           echo "=== Loading schema from SQL file ==="
           
+          # schema.sql이 있으면 직접 로드
           if [ -f "src/main/resources/schema.sql" ]; then
             docker exec -i chwimeet-mariadb mariadb -uroot -p${{ secrets.DB_PASSWORD }} chwimeet < src/main/resources/schema.sql
             echo "✅ Schema loaded from SQL file"
@@ -128,18 +113,18 @@ jobs:
             exit 1
           fi
           
+          # 테이블 확인
           echo "=== Tables in database ==="
           docker exec chwimeet-mariadb mariadb -uroot -p${{ secrets.DB_PASSWORD }} -e "USE chwimeet; SHOW TABLES;"
 
       - name: Generate JOOQ sources
-        if: steps.cache-jooq.outputs.cache-hit != 'true'
         env:
           SPRING__DATASOURCE__URL: jdbc:mariadb://localhost:3306/chwimeet
           SPRING__DATASOURCE__USERNAME: root
           SPRING__DATASOURCE__PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
           echo "=== Starting JOOQ Generation ==="
-          ./gradlew generateJooq --no-daemon --build-cache
+          ./gradlew generateJooq --no-daemon
           
           if [ -d "build/generated-src/jooq/main/com/back/jooq/tables" ]; then
             echo "✅ JOOQ generated successfully"
@@ -149,29 +134,13 @@ jobs:
             exit 1
           fi
 
-      - name: Skip JOOQ generation (using cache)
-        if: steps.cache-jooq.outputs.cache-hit == 'true'
-        run: |
-          echo "⚡ JOOQ generation skipped (using cached sources)"
-          ls -la build/generated-src/jooq/main/com/back/jooq/tables/
-
-      # ========================================
-      # 🚀 최적화: 테스트 병렬 실행
-      # ========================================
+      # 테스트 + 커버리지
       - name: Run tests (JUnit5) with coverage
         env:
           SPRING__DATASOURCE__URL: jdbc:mariadb://localhost:3306/chwimeet
           SPRING__DATASOURCE__USERNAME: root
           SPRING__DATASOURCE__PASSWORD: ${{ secrets.DB_PASSWORD }}
-        run: |
-          ./gradlew test jacocoTestReport \
-            -x generateJooq \
-            --parallel \
-            --max-workers=4 \
-            --build-cache \
-            --info \
-            --stacktrace \
-            --no-daemon
+        run: ./gradlew test jacocoTestReport -x generateJooq --info --stacktrace --no-daemon
 
       # 빌드(테스트/커버리지 재실행 방지)
       - name: Assemble (no tests)
@@ -179,7 +148,7 @@ jobs:
           SPRING__DATASOURCE__URL: jdbc:mariadb://localhost:3306/chwimeet
           SPRING__DATASOURCE__USERNAME: root
           SPRING__DATASOURCE__PASSWORD: ${{ secrets.DB_PASSWORD }}
-        run: ./gradlew assemble -x test -x jacocoTestReport --build-cache --no-daemon
+        run: ./gradlew assemble -x test -x jacocoTestReport --no-daemon
 
       # 테스트 결과 업로드
       - name: Upload test results (JUnit XML)

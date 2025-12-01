@@ -1,6 +1,5 @@
 package com.back.domain.chat.controller;
 
-import com.back.BaseTestContainer;
 import com.back.config.TestConfig;
 import com.back.domain.category.entity.Category;
 import com.back.domain.category.repository.CategoryRepository;
@@ -43,7 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(TestConfig.class)
 @AutoConfigureMockMvc
 @Transactional
-class ChatControllerTest extends BaseTestContainer {
+class ChatControllerTest {
 
     @Autowired
     private MockMvc mvc;
