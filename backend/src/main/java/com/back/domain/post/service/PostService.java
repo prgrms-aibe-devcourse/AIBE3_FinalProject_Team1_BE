@@ -1,46 +1,22 @@
 package com.back.domain.post.service;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-
 import com.back.domain.category.entity.Category;
 import com.back.domain.category.repository.CategoryRepository;
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.repository.MemberRepository;
 import com.back.domain.post.dto.req.PostCreateReqBody;
 import com.back.domain.post.dto.req.PostEmbeddingDto;
+import com.back.domain.post.dto.req.PostImageReqBody;
 import com.back.domain.post.dto.req.PostUpdateReqBody;
-import com.back.domain.post.dto.res.PostBannedResBody;
-import com.back.domain.post.dto.res.PostCreateResBody;
-import com.back.domain.post.dto.res.PostDetailResBody;
-import com.back.domain.post.dto.res.PostImageResBody;
-import com.back.domain.post.dto.res.PostListResBody;
-import com.back.domain.post.entity.Post;
-import com.back.domain.post.entity.PostFavorite;
-import com.back.domain.post.entity.PostImage;
-import com.back.domain.post.entity.PostOption;
-import com.back.domain.post.entity.PostRegion;
-import com.back.domain.post.repository.PostFavoriteQueryRepository;
-import com.back.domain.post.repository.PostFavoriteRepository;
-import com.back.domain.post.repository.PostOptionRepository;
-import com.back.domain.post.repository.PostQueryRepository;
-import com.back.domain.post.repository.PostRepository;
+import com.back.domain.post.dto.res.*;
+import com.back.domain.post.entity.*;
+import com.back.domain.post.repository.*;
 import com.back.domain.region.entity.Region;
 import com.back.domain.region.repository.RegionRepository;
 import com.back.global.exception.ServiceException;
 import com.back.global.s3.S3Uploader;
 import com.back.standard.util.page.PagePayload;
 import com.back.standard.util.page.PageUt;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -268,18 +244,6 @@ public class PostService {
 			throw new ServiceException(HttpStatus.FORBIDDEN, "본인의 게시글만 수정할 수 있습니다.");
 		}
 
-		if (files == null || files.isEmpty()) {
-			throw new ServiceException(HttpStatus.BAD_REQUEST, "이미지는 최소 1개 이상 등록해야 합니다.");
-		}
-
-		if (reqBody.images() == null ||
-			reqBody.images().isEmpty() ||
-			reqBody.images().size() != files.size()) {
-
-			throw new ServiceException(HttpStatus.BAD_REQUEST,
-				"이미지 정보(images)와 업로드한 파일 개수가 일치해야 합니다.");
-		}
-
 		Category category = this.categoryRepository.findById(reqBody.categoryId())
 			.orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, "존재하지 않는 카테고리입니다."));
 
@@ -296,44 +260,72 @@ public class PostService {
 
 		post.updateCategory(category);
 
+        List<PostRegion> newPostRegions = this.regionRepository.findAllById(reqBody.regionIds())
+                .stream()
+                .map(region -> new PostRegion(post, region))
+                .toList();
+
+        post.resetPostRegions(newPostRegions);
+
 		List<PostOption> newOptions = reqBody.options().stream()
 			.map(option -> new PostOption(post, option.name(), option.deposit(), option.fee()))
 			.toList();
 
 		post.resetPostOptions(newOptions);
 
-		List<String> oldImageUrls = post.getImages().stream()
-			.map(PostImage::getImageUrl)
-			.filter(Objects::nonNull)
-			.toList();
-
-		for (String url : oldImageUrls) {
-			s3.delete(url);
-		}
-
-		List<PostImage> newImages = new ArrayList<>();
-
-		for (int i = 0; i < files.size(); i++) {
-			MultipartFile file = files.get(i);
-
-			String uploadedUrl = s3.upload(file);
-
-			boolean isPrimary = reqBody.images().get(i).isPrimary();
-
-			newImages.add(new PostImage(post, uploadedUrl, isPrimary));
-		}
-
-		post.resetPostImages(newImages);
-
-		List<PostRegion> newPostRegions = this.regionRepository.findAllById(reqBody.regionIds())
-			.stream()
-			.map(region -> new PostRegion(post, region))
-			.toList();
-
-		post.resetPostRegions(newPostRegions);
+		post.resetPostImages(processPostImage(post, reqBody, files));
 
 		postVectorService.indexPost(post);
 	}
+
+    private List<PostImage> processPostImage(
+            Post post,
+            PostUpdateReqBody reqBody,
+            List<MultipartFile> files
+    ) {
+        List<Long> keepImageIds = reqBody.images().stream()
+                .map(PostImageReqBody::id)
+                .filter(Objects::nonNull)
+                .toList();
+
+        post.getImages().stream()
+                .filter(img -> !keepImageIds.contains(img.getId()))
+                .forEach(img -> s3.delete(img.getImageUrl()));
+
+        List<PostImage> result = new ArrayList<>();
+        int fileIndex = 0;
+
+        for (PostImageReqBody imageReq : reqBody.images()) {
+            if (imageReq.id() != null) {
+
+                PostImage existingImage = post.getImages().stream()
+                        .filter(img -> img.getId().equals(imageReq.id()))
+                        .findFirst()
+                        .orElseThrow(() -> new ServiceException(
+                                HttpStatus.NOT_FOUND,
+                                "존재하지 않는 이미지입니다: " + imageReq.id()
+                        ));
+
+                result.add(new PostImage(post, existingImage.getImageUrl(), imageReq.isPrimary()));
+
+            } else {
+                if (files == null || fileIndex >= files.size()) {
+                    throw new ServiceException(HttpStatus.BAD_REQUEST,
+                            "이미지 정보와 파일 개수가 일치하지 않습니다.");
+                }
+
+                String uploadedUrl = s3.upload(files.get(fileIndex));
+                result.add(new PostImage(post, uploadedUrl, imageReq.isPrimary()));
+                fileIndex++;
+            }
+        }
+
+        if (result.isEmpty()) {
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "이미지는 최소 1개 이상 등록해야 합니다.");
+        }
+
+        return result;
+    }
 
 	@Transactional
 	public void deletePost(Long postId, long memberId) {
