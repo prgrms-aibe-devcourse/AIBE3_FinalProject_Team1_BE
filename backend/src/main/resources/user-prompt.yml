@@ -1,0 +1,13 @@
+custom:
+  ai:
+    user:
+      default-post-detail-gen-prompt: |
+        ## 이미지 분석 결과를 바탕으로 게시글을 작성하세요.
+        
+        카테고리 목록:
+        {categoriesJson}
+        
+        사용자 추가 정보:
+        {additionalInfo}
+        
+        위 정보를 종합하여 JSON 형식으로만 응답하세요.

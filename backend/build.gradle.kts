@@ -63,6 +63,8 @@ dependencies {
     annotationProcessor ("com.querydsl:querydsl-apt:5.0.0:jakarta")
     annotationProcessor ("jakarta.annotation:jakarta.annotation-api")
     annotationProcessor ("jakarta.persistence:jakarta.persistence-api:3.1.0")
+    // 이미지 리사이징
+    implementation("net.coobird:thumbnailator:0.4.20")
 
     // Testing (테스트)
     testImplementation("org.springframework.boot:spring-boot-starter-test")

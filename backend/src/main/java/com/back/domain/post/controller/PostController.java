@@ -2,12 +2,15 @@ package com.back.domain.post.controller;
 
 import com.back.domain.post.dto.req.PostCreateReqBody;
 import com.back.domain.post.dto.req.PostUpdateReqBody;
+import com.back.domain.post.dto.res.GenPostDetailResBody;
 import com.back.domain.post.dto.res.PostCreateResBody;
 import com.back.domain.post.dto.res.PostDetailResBody;
 import com.back.domain.post.dto.res.PostListResBody;
+import com.back.domain.post.service.PostContentGenerateService;
 import com.back.domain.post.service.PostSearchService;
 import com.back.domain.post.service.PostService;
 import com.back.domain.review.service.ReviewSummaryService;
+import com.back.global.annotations.ValidateImages;
 import com.back.global.rsData.RsData;
 import com.back.global.security.SecurityUser;
 import com.back.standard.util.page.PagePayload;
@@ -34,22 +37,23 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class PostController implements PostApi {
 
-	private final PostService postService;
-	private final ReviewSummaryService reviewSummaryService;
-	private final PostSearchService postSearchService;
+    private final PostService postService;
+    private final ReviewSummaryService reviewSummaryService;
+    private final PostSearchService postSearchService;
+	private final PostContentGenerateService postContentGenerateService;
 
-	@PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<RsData<PostCreateResBody>> createPost(
-		@Valid @RequestPart("request") PostCreateReqBody reqBody,
-		@RequestPart(value = "file", required = false) List<MultipartFile> files,
-		@AuthenticationPrincipal SecurityUser user
-	) {
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<RsData<PostCreateResBody>> createPost(
+            @Valid @RequestPart("request") PostCreateReqBody reqBody,
+            @RequestPart(value = "file", required = false) List<MultipartFile> files,
+            @AuthenticationPrincipal SecurityUser user
+    ) {
 
-		PostCreateResBody body = this.postService.createPost(reqBody, files, user.getId());
+        PostCreateResBody body = this.postService.createPost(reqBody, files, user.getId());
 
-		return ResponseEntity.status(HttpStatus.CREATED)
-			.body(new RsData<>(HttpStatus.CREATED, "게시글이 생성되었습니다.", body));
-	}
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new RsData<>(HttpStatus.CREATED, "게시글이 생성되었습니다.", body));
+    }
 
 	@GetMapping
 	public ResponseEntity<RsData<PagePayload<PostListResBody>>> getPostList(
@@ -141,6 +145,15 @@ public class PostController implements PostApi {
 
 		return ResponseEntity.ok(new RsData<>(HttpStatus.OK, HttpStatus.OK.name(), body));
 	}
+
+    @PostMapping("/genDetail")
+    public ResponseEntity<RsData<GenPostDetailResBody>> genDetail(
+            @ValidateImages @RequestPart("images") List<MultipartFile> imageFiles,
+            @RequestPart(name = "additionalInfo", required = false) String additionalInfo) {
+        GenPostDetailResBody result = postContentGenerateService.generatePostDetail(imageFiles, additionalInfo);
+        RsData<GenPostDetailResBody> response = new RsData<>(HttpStatus.OK, "응답 생성 성공", result);
+        return ResponseEntity.ok(response);
+    }
 
 	@GetMapping("/search/ai")
 	public ResponseEntity<RsData<?>> searchPostsWithAi(

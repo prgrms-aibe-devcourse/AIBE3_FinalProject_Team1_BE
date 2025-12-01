@@ -2,7 +2,7 @@ spring:
   application:
     name: Chwi-Meet
   config:
-    import: optional:file:.env[.properties], classpath:system-prompt.yml
+    import: optional:file:.env[.properties], classpath:system-prompt.yml, classpath:user-prompt.yml
   profiles:
     active: dev
   output:
