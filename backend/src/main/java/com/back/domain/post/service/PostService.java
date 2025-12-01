@@ -1,17 +1,5 @@
 package com.back.domain.post.service;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-
 import com.back.domain.category.entity.Category;
 import com.back.domain.category.repository.CategoryRepository;
 import com.back.domain.member.entity.Member;
@@ -19,28 +7,15 @@ import com.back.domain.member.repository.MemberRepository;
 import com.back.domain.post.dto.req.PostCreateReqBody;
 import com.back.domain.post.dto.req.PostEmbeddingDto;
 import com.back.domain.post.dto.req.PostUpdateReqBody;
-import com.back.domain.post.dto.res.PostBannedResBody;
-import com.back.domain.post.dto.res.PostCreateResBody;
-import com.back.domain.post.dto.res.PostDetailResBody;
-import com.back.domain.post.dto.res.PostImageResBody;
-import com.back.domain.post.dto.res.PostListResBody;
-import com.back.domain.post.entity.Post;
-import com.back.domain.post.entity.PostFavorite;
-import com.back.domain.post.entity.PostImage;
-import com.back.domain.post.entity.PostOption;
-import com.back.domain.post.entity.PostRegion;
-import com.back.domain.post.repository.PostFavoriteQueryRepository;
-import com.back.domain.post.repository.PostFavoriteRepository;
-import com.back.domain.post.repository.PostOptionRepository;
-import com.back.domain.post.repository.PostQueryRepository;
-import com.back.domain.post.repository.PostRepository;
+import com.back.domain.post.dto.res.*;
+import com.back.domain.post.entity.*;
+import com.back.domain.post.repository.*;
 import com.back.domain.region.entity.Region;
 import com.back.domain.region.repository.RegionRepository;
 import com.back.global.exception.ServiceException;
 import com.back.global.s3.S3Uploader;
 import com.back.standard.util.page.PagePayload;
 import com.back.standard.util.page.PageUt;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;

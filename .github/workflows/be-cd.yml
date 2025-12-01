@@ -81,8 +81,123 @@ jobs:
 
       - name: Make gradlew executable
         run: chmod +x ./gradlew
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
 
-      # 빌드 (테스트 제외 - CI에서 이미 테스트 완료)
+      # ========================================
+      # 🚀 CD 독립 실행: main branch 전용 (캐시 없음)
+      # - main 브랜치의 SQL만 사용하여 프로덕션 안전성 보장
+      # - CI와 완전히 분리: PR 캐시 영향 차단
+      # - 매번 JOOQ 새로 생성으로 CI 의존성 제거
+      # ========================================
+
+      # ========================================
+      # JOOQ 생성 (매번 실행)
+      # - GitHub Actions Runner의 임시 MariaDB 사용
+      # - main 브랜치의 SQL로만 생성 (프로덕션 DB와 무관)
+      # ========================================
+      - name: Start MariaDB
+        env:
+          SPRING__DATASOURCE__PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          echo "🚀 Starting MariaDB..."
+          echo "=== Environment check ==="
+          echo "DB_PASSWORD is set: ${{ secrets.DB_PASSWORD != '' }}"
+          
+          docker compose up -d mariadb
+          echo "⏳ Waiting for MariaDB to be ready..."
+          sleep 10
+          
+          echo "=== Container status ==="
+          docker ps -a | grep mariadb || echo "No mariadb container found"
+          
+          echo "=== Recent logs ==="
+          docker compose logs --tail=20 mariadb || echo "No logs available"
+
+      - name: Verify MariaDB container is running
+        run: |
+          if ! docker ps | grep -q chwimeet-mariadb; then
+            echo "❌ MariaDB container is not running!"
+            echo "=== Docker compose logs ==="
+            docker compose logs mariadb
+            exit 1
+          fi
+          echo "✅ MariaDB container is running"
+
+      - name: Wait for MariaDB
+        env:
+          SPRING__DATASOURCE__PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          echo "⏳ Waiting for MariaDB to accept connections..."
+          
+          MAX_TRIES=30
+          COUNTER=0
+          
+          until docker exec chwimeet-mariadb mariadb-admin ping -h localhost -uroot -p${{ secrets.DB_PASSWORD }} --silent 2>/dev/null; do
+            COUNTER=$((COUNTER + 1))
+          
+            if [ $COUNTER -ge $MAX_TRIES ]; then
+              echo "❌ MariaDB failed to start after ${MAX_TRIES} attempts (60 seconds)"
+              echo "=== MariaDB logs ==="
+              docker compose logs mariadb
+              echo "=== Container status ==="
+              docker ps -a | grep mariadb
+              exit 1
+            fi
+          
+            echo "Waiting for MariaDB... (attempt ${COUNTER}/${MAX_TRIES})"
+            sleep 2
+          done
+          
+          echo "✅ MariaDB is ready!"
+
+      - name: Generate JOOQ sources (always)
+        env:
+          SPRING__DATASOURCE__USERNAME: root
+          SPRING__DATASOURCE__PASSWORD: ${{ secrets.DB_PASSWORD }}
+          SPRING__DATASOURCE__URL: jdbc:mariadb://localhost:3306/chwimeet
+        run: |
+          echo "=== Starting JOOQ Generation (main branch) ==="
+          echo "📌 이것은 빌드용 임시 DB이며 프로덕션 DB와 무관합니다"
+          echo "📌 CD는 캐시를 사용하지 않고 매번 새로 생성합니다"
+          echo "   이유: PR 캐시 오염 방지, 프로덕션 안전성 최우선"
+          echo ""
+          echo "Checking environment variables (masked):"
+          echo "SPRING__DATASOURCE__USERNAME=$SPRING__DATASOURCE__USERNAME"
+          echo "SPRING__DATASOURCE__URL=$SPRING__DATASOURCE__URL"
+          echo ""
+          echo "⚙️  JOOQ 플러그인이 자동으로 Flyway 마이그레이션 실행"
+          
+          ./gradlew generateJooqClasses --no-daemon --stacktrace
+          
+          if [ -d "src/generated/com/back/jooq/tables" ]; then
+            echo "✅ JOOQ generated successfully"
+            ls -la src/generated/com/back/jooq/tables/
+          else
+            echo "❌ JOOQ generation failed"
+            exit 1
+          fi
+          
+          echo ""
+          echo "=== Verifying tables in database ==="
+          docker exec chwimeet-mariadb mariadb -uroot -p${{ secrets.DB_PASSWORD }} -e "USE chwimeet; SHOW TABLES;"
+
+      - name: Stop MariaDB
+        if: always()
+        run: docker compose down -v
+
+      - name: Verify JOOQ sources exist
+        run: |
+          if [ ! -d "src/generated/com/back/jooq/tables" ]; then
+            echo "❌ JOOQ sources not found!"
+            exit 1
+          fi
+          echo "✅ JOOQ sources verified"
+          ls -la src/generated/com/back/jooq/tables/
+
+      # ========================================
+      # 🚀 빌드 (테스트 제외)
+      # ========================================
       - name: Build with Gradle
         run: ./gradlew clean bootJar -x test --no-daemon
 
