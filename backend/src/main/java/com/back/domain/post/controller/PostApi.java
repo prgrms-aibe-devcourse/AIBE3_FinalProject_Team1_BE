@@ -32,7 +32,7 @@ public interface PostApi {
 
 	@Operation(summary = "게시글 생성 API", description = "새로운 게시글을 생성합니다.")
 	ResponseEntity<RsData<PostCreateResBody>> createPost(@Valid @RequestPart("request") PostCreateReqBody reqBody,
-		@RequestPart(value = "file", required = false) List<MultipartFile> files,
+		@RequestPart(value = "images", required = false) List<MultipartFile> images,
 		@AuthenticationPrincipal SecurityUser user);
 
 	@Operation(summary = "게시글 목록 조회 API", description = "게시글 목록을 조회합니다.")
@@ -83,7 +83,7 @@ public interface PostApi {
 	ResponseEntity<RsData<Void>> updatePost(
 		@PathVariable Long id,
 		@Valid @RequestPart("request") PostUpdateReqBody reqBody,
-		@RequestPart(value = "file", required = false) List<MultipartFile> files,
+		@RequestPart(value = "images", required = false) List<MultipartFile> images,
 		@AuthenticationPrincipal SecurityUser user
 	);
 
