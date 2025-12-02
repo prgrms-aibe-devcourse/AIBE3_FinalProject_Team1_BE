@@ -149,4 +149,8 @@ public class Post extends BaseEntity {
     public void unban() {
         this.isBanned = false;
     }
+
+    public void updateEmbeddingStatusWait() {
+        this.embeddingStatus = EmbeddingStatus.WAIT;
+    }
 }
