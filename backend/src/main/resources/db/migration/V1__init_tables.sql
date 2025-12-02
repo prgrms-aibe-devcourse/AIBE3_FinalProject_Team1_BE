@@ -32,7 +32,7 @@ CREATE TABLE `category` (
                             PRIMARY KEY (`id`),
                             KEY `FK2y94svpmqttx80mshyny85wqr` (`parent_id`),
                             CONSTRAINT `FK2y94svpmqttx80mshyny85wqr` FOREIGN KEY (`parent_id`) REFERENCES `category` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=61 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -54,7 +54,7 @@ CREATE TABLE `chat_member` (
                                KEY `FKnvohh3wx5hc6293ob3kfne72f` (`member_id`),
                                CONSTRAINT `FKnvohh3wx5hc6293ob3kfne72f` FOREIGN KEY (`member_id`) REFERENCES `member` (`id`),
                                CONSTRAINT `FKp3ov6ys5mw1i7e9va4nniwa5q` FOREIGN KEY (`chat_room_id`) REFERENCES `chat_room` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -72,7 +72,7 @@ CREATE TABLE `chat_message` (
                                 `chat_room_id` bigint(20) DEFAULT NULL,
                                 `content` text DEFAULT NULL,
                                 PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -93,12 +93,8 @@ CREATE TABLE `chat_room` (
                              PRIMARY KEY (`id`),
                              KEY `FKdedif34f1oocp49p9lxh3tglc` (`post_id`),
                              CONSTRAINT `FKdedif34f1oocp49p9lxh3tglc` FOREIGN KEY (`post_id`) REFERENCES `post` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `member`
---
 
 DROP TABLE IF EXISTS `member`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -121,7 +117,7 @@ CREATE TABLE `member` (
                           UNIQUE KEY `UKmbmcqelty0fbrvxp1q58dn57t` (`email`),
                           UNIQUE KEY `UKhh9kg6jti4n1eoiertn2k6qsc` (`nickname`),
                           UNIQUE KEY `UKn2qryhkfoqeel6njfhrcq6k7u` (`phone_number`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -167,12 +163,14 @@ CREATE TABLE `post` (
                         `title` varchar(255) NOT NULL,
                         `author_id` bigint(20) NOT NULL,
                         `category_id` bigint(20) NOT NULL,
+                        `embedding_status` enum('DONE','PENDING','WAIT') NOT NULL,
+                        `embedding_version` bigint(20) DEFAULT NULL,
                         PRIMARY KEY (`id`),
                         KEY `FKiq6lerqnw4jde34k91gugrx9` (`author_id`),
                         KEY `fk_post_category` (`category_id`),
                         CONSTRAINT `FKiq6lerqnw4jde34k91gugrx9` FOREIGN KEY (`author_id`) REFERENCES `member` (`id`),
                         CONSTRAINT `fk_post_category` FOREIGN KEY (`category_id`) REFERENCES `category` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -193,7 +191,7 @@ CREATE TABLE `post_favorite` (
                                  KEY `FKtnr54tuktg3welr2u950p0mqr` (`post_id`),
                                  CONSTRAINT `FKa8aly3gnyl9xue6txyf0ckojj` FOREIGN KEY (`member_id`) REFERENCES `member` (`id`),
                                  CONSTRAINT `FKtnr54tuktg3welr2u950p0mqr` FOREIGN KEY (`post_id`) REFERENCES `post` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -213,7 +211,7 @@ CREATE TABLE `post_image` (
                               PRIMARY KEY (`id`),
                               KEY `FKsip7qv57jw2fw50g97t16nrjr` (`post_id`),
                               CONSTRAINT `FKsip7qv57jw2fw50g97t16nrjr` FOREIGN KEY (`post_id`) REFERENCES `post` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -234,7 +232,7 @@ CREATE TABLE `post_option` (
                                PRIMARY KEY (`id`),
                                KEY `FKmxsh5bfx9e0n7ncm5ksckdgmg` (`post_id`),
                                CONSTRAINT `FKmxsh5bfx9e0n7ncm5ksckdgmg` FOREIGN KEY (`post_id`) REFERENCES `post` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -255,7 +253,7 @@ CREATE TABLE `post_region` (
                                KEY `fk_postregion_region` (`region_id`),
                                CONSTRAINT `FK9l3v41p5r5usshroiywb6cccg` FOREIGN KEY (`post_id`) REFERENCES `post` (`id`),
                                CONSTRAINT `fk_postregion_region` FOREIGN KEY (`region_id`) REFERENCES `region` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -274,7 +272,7 @@ CREATE TABLE `region` (
                           PRIMARY KEY (`id`),
                           KEY `FK5cgfpq4u2digwkllynq14k7te` (`parent_id`),
                           CONSTRAINT `FK5cgfpq4u2digwkllynq14k7te` FOREIGN KEY (`parent_id`) REFERENCES `region` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=35 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -295,7 +293,7 @@ CREATE TABLE `report` (
                           PRIMARY KEY (`id`),
                           KEY `FKel7y5wyx42a6njav1dbe2torl` (`member_id`),
                           CONSTRAINT `FKel7y5wyx42a6njav1dbe2torl` FOREIGN KEY (`member_id`) REFERENCES `member` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -330,7 +328,7 @@ CREATE TABLE `reservation` (
                                KEY `FKqachmfh1uvgquvj3svmd0b84s` (`post_id`),
                                CONSTRAINT `FKaflm6rogggja90detv2xybat2` FOREIGN KEY (`author_id`) REFERENCES `member` (`id`),
                                CONSTRAINT `FKqachmfh1uvgquvj3svmd0b84s` FOREIGN KEY (`post_id`) REFERENCES `post` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1051 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -350,7 +348,7 @@ CREATE TABLE `reservation_log` (
                                    PRIMARY KEY (`id`),
                                    KEY `FKehqrjsnudejd72fn627bbb26d` (`reservation_id`),
                                    CONSTRAINT `FKehqrjsnudejd72fn627bbb26d` FOREIGN KEY (`reservation_id`) REFERENCES `reservation` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -394,7 +392,7 @@ CREATE TABLE `review` (
                           PRIMARY KEY (`id`),
                           UNIQUE KEY `UKhyxvthxr4ats27c7vko0rb4xg` (`reservation_id`),
                           CONSTRAINT `FK7tyi0jd0eaphyr0gsvfjqww9i` FOREIGN KEY (`reservation_id`) REFERENCES `reservation` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2051 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -423,4 +421,4 @@ CREATE TABLE `vector_store` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
 
--- Dump completed on 2025-11-28 21:46:24
+-- Dump completed on 2025-12-02 11:42:46

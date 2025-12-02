@@ -110,12 +110,9 @@ public class PostService {
 
 		post.getPostRegions().addAll(postRegions);
 
-		this.postRepository.save(post);
+		Post savedPost = this.postRepository.save(post);
 
-		// 임베딩 작업 스케줄 처리
-		// postVectorService.indexPost(post);
-
-		return PostCreateResBody.of(post);
+		return PostCreateResBody.of(savedPost);
 	}
 
 	@Transactional(readOnly = true)
