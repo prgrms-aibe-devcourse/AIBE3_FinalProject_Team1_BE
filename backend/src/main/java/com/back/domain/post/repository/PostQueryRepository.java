@@ -1,26 +1,26 @@
 package com.back.domain.post.repository;
 
-import static com.back.domain.post.entity.QPost.*;
-import static com.back.domain.post.entity.QPostRegion.*;
-import static com.back.domain.region.entity.QRegion.*;
-import static com.back.domain.reservation.entity.QReservation.*;
+import com.back.domain.post.common.EmbeddingStatus;
+import com.back.domain.post.dto.req.PostEmbeddingDto;
+import com.back.domain.post.entity.Post;
+import com.back.domain.reservation.common.ReservationStatus;
+import com.back.domain.reservation.entity.Reservation;
+import com.back.global.queryDsl.CustomQuerydslRepositorySupport;
+import com.querydsl.core.Tuple;
+import com.querydsl.core.types.dsl.BooleanExpression;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import com.back.domain.post.common.EmbeddingStatus;
-import com.back.domain.post.dto.req.PostEmbeddingDto;
-import com.querydsl.core.Tuple;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Repository;
-
-import com.back.domain.post.entity.Post;
-import com.back.domain.reservation.common.ReservationStatus;
-import com.back.domain.reservation.entity.Reservation;
-import com.back.global.queryDsl.CustomQuerydslRepositorySupport;
-import com.querydsl.core.types.dsl.BooleanExpression;
+import static com.back.domain.member.entity.QMember.member;
+import static com.back.domain.post.entity.QPost.post;
+import static com.back.domain.post.entity.QPostRegion.postRegion;
+import static com.back.domain.region.entity.QRegion.region;
+import static com.back.domain.reservation.entity.QReservation.reservation;
 
 @Repository
 public class PostQueryRepository extends CustomQuerydslRepositorySupport {
@@ -37,15 +37,17 @@ public class PostQueryRepository extends CustomQuerydslRepositorySupport {
 		return applyPagination(
 			pageable,
 			contentQuery -> contentQuery
-				.selectFrom(post).leftJoin(post.postRegions, postRegion).fetchJoin()
-				.leftJoin(postRegion.region, region).fetchJoin()
+				.selectFrom(post)
+                .leftJoin(post.postRegions, postRegion)
+				.leftJoin(postRegion.region, region)
+                .join(post.author, member).fetchJoin()
 				.where(
 					containsKeyword(keyword),
 					inCategoryIds(categoryId),
 					inRegionIds(regionIds),
 					post.isBanned.isFalse() // 제재 처리 된 게시물 제외
 				)
-				.distinct(),
+                ,
 			countQuery -> countQuery
 				.select(post.count())
 				.from(post)
@@ -53,9 +55,8 @@ public class PostQueryRepository extends CustomQuerydslRepositorySupport {
 				.where(
 					containsKeyword(keyword),
 					inCategoryIds(categoryId),
-					inRegionIds(regionIds
-					)
-
+					inRegionIds(regionIds),
+                    post.isBanned.isFalse() // 제재 처리 된 게시물 제외
 				)
 		);
 	}
