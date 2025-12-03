@@ -19,6 +19,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/reservations")
@@ -43,7 +45,7 @@ public class ReservationController implements ReservationApi {
     public ResponseEntity<RsData<PagePayload<GuestReservationSummaryResBody>>> getSentReservations(
             @AuthenticationPrincipal SecurityUser securityUser,
             @PageableDefault(size = 5, page = 0)Pageable pageable,
-            @RequestParam(required = false) ReservationStatus status,
+            @RequestParam(required = false) List<ReservationStatus> status,
             @RequestParam(required = false) String keyword
             ) {
         log.info("keyword = {}", keyword);

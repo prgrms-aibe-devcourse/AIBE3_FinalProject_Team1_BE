@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface ReservationRepositoryCustom {
@@ -25,7 +26,7 @@ public interface ReservationRepositoryCustom {
     Optional<Reservation> findByIdWithPostAndAuthor(Long id);
 
     Page<Reservation> findByAuthorWithFetch(Member author,
-                                            ReservationStatus status,
+                                            List<ReservationStatus> status,
                                             String keyword,
                                             Pageable pageable);
 

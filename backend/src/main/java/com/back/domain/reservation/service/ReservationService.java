@@ -190,7 +190,7 @@ public class ReservationService {
     public PagePayload<GuestReservationSummaryResBody> getSentReservations(
             Member author,
             Pageable pageable,
-            ReservationStatus status,
+            List<ReservationStatus> status,
             String keyword) {
 
         Page<Reservation> reservationPage = reservationQueryRepository.findByAuthorWithFetch(author, status, keyword, pageable);
