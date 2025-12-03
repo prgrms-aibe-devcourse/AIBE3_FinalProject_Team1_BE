@@ -55,7 +55,7 @@ public class ReservationService {
 
     @Transactional
     public ReservationDto create(CreateReservationReqBody reqBody, Member author) {
-        Post post = postService.getById(reqBody.postId());
+        Post post = postService.getByIdWithLock(reqBody.postId());
 
         // 기간 중복 체크
         validateNoOverlappingReservation(

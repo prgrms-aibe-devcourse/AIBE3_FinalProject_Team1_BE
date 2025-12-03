@@ -169,6 +169,11 @@ public class PostService {
 		return PostDetailResBody.of(post, isFavorite, images, authorProfileUrl);
 	}
 
+	public Post getByIdWithLock(Long postId) {
+		return this.postRepository.findByIdWithLock(postId)
+				.orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, "존재하지 않는 게시글입니다."));
+	}
+
 	@Transactional(readOnly = true)
 	public PagePayload<PostListResBody> getMyPosts(Long memberId, Pageable pageable) {
 		Page<PostListResBody> result = this.postQueryRepository.findMyPost(memberId, pageable)
