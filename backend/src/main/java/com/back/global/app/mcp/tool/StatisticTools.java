@@ -7,7 +7,6 @@ import com.slack.api.Slack;
 import com.slack.api.methods.response.chat.ChatPostMessageResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.beans.factory.annotation.Value;
@@ -73,17 +72,14 @@ public class StatisticTools {
                     - '이번달': 오늘 날짜
                     - '지난달': 지난 달 마지막 날
                     """)
-            LocalDate secondPeriod) {
-        try {
-            long start = System.currentTimeMillis();
-
+            LocalDate secondPeriod)
+    {
+        try (Slack slack = Slack.getInstance()) {
             LocalDateTime from = firstPeriod.atStartOfDay();
             LocalDateTime to = secondPeriod.atTime(23, 59, 59);
             List<CategoryStatsDto> stats = reservationQueryRepository.getCategoryStats(from, to);
 
-            Slack slack = Slack.getInstance();
-
-            // 1. 메인 메시지 (스레드 시작점)
+            // 메인 메시지 (스레드 시작점)
             ChatPostMessageResponse mainResponse = slack.methods(slackUserToken)
                                                         .chatPostMessage(request -> request
                                                                 .channel(slackChannelId)
@@ -91,11 +87,8 @@ public class StatisticTools {
                                                         );
             String threadTs = mainResponse.getTs();
 
-            // 2. JSON 데이터 생성
-            String jsonData = objectMapper.writerWithDefaultPrettyPrinter()
-                                          .writeValueAsString(stats);
-
-            // 3. 스레드에 분석 요청 프롬프트
+            // 스레드에 내용 전달
+            String jsonData = objectMapper.writeValueAsString(stats);
             String prompt = getPrompt(jsonData);
 
             slack.methods(slackUserToken)
@@ -105,9 +98,6 @@ public class StatisticTools {
                          .text(prompt)
                  );
 
-            long end = System.currentTimeMillis();
-            log.info("카테고리별 통계 응답 시간: {}ms", (end - start));
-
             return "통계 데이터가 Claude에게 전달되었습니다.";
         } catch (Exception e) {
             log.error("카테고리 통계 Slack 전송 중 오류 발생", e);
@@ -115,24 +105,34 @@ public class StatisticTools {
         }
     }
 
-    @NotNull
     private String getPrompt(String jsonData) {
-        String codeBlock = "```\n" + jsonData + "\n```";
-
         return String.format(
-                "<@%s> P2P 대여 플랫폼 카테고리별 통계 분석을 요청합니다.\n\n" +
-                        "⚠️ 중요 컨텍스트:\n" +
-                        "• 이것은 대여 서비스 플랫폼의 거래 통계입니다\n" +
-                        "• '지출/소비'가 아닌 '대여료/거래액', '대여/이용'으로 표현해주세요\n" +
-                        "• 플랫폼 전체 거래 관점으로 분석해주세요\n\n" +
-                        "📋 분석 요청사항:\n" +
-                        "1. 📊 전체 대여 거래 현황 (총 대여료, 거래 건수)\n" +
-                        "2. 📈 카테고리별 대여 트렌드 (인기 카테고리, 증감률)\n" +
-                        "3. 💡 플랫폼 인사이트 (대여 패턴, 시즌 트렌드 등)\n\n" +
-                        "📎 상세 데이터:\n" +
-                        "%s",
-                slackClaudeMemberId,
-                codeBlock
+                """
+                <@%s> P2P 대여 플랫폼 카테고리별 통계 분석을 요청합니다.
+                
+                :warning: 중요 컨텍스트:
+                • 이것은 대여 서비스 플랫폼의 거래 통계입니다
+                • '지출/소비'가 아닌 '대여료/거래액', '대여/이용'으로 표현해주세요
+                • 플랫폼 전체 거래 관점으로 분석해주세요
+                • 응답 시 과도한 포맷팅(볼드, 특수문자)은 최소화해주세요
+                
+                :page_facing_up: 데이터 구조 설명:
+                • categoryName: 대여 카테고리명
+                • tradeCount: 해당 카테고리의 총 대여 거래 건수
+                • totalFee: 해당 카테고리의 총 대여료 합계 (단위: 원)
+                • 정렬 기준: tradeCount 내림차순, tradeCount가 같으면 totalFee 내림차순
+                • 평균 거래액은 totalFee ÷ tradeCount로 계산 가능합니다
+                
+                :clipboard: 분석 요청사항:
+                1. :bar_chart: 전체 대여 거래 현황 (총 대여료, 거래 건수)
+                2. :chart_with_upwards_trend: 카테고리별 대여 트렌드 (인기 카테고리, 평균 거래액)
+                3. :bulb: 플랫폼 인사이트 (대여 패턴, 시즌 트렌드 등)
+                
+                :paperclip: 첨부된 JSON 데이터:
+                
+                %s
+                """,
+                slackClaudeMemberId, jsonData
         );
     }
 }

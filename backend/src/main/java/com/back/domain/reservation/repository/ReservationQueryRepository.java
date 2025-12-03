@@ -172,7 +172,6 @@ public class ReservationQueryRepository extends CustomQuerydslRepositorySupport
     public List<CategoryStatsDto> getCategoryStats(LocalDateTime from, LocalDateTime to) {
         return select(Projections.constructor(
                 CategoryStatsDto.class,
-                category.id,
                 category.name,
                 reservation.count(),
                 post.fee.sum()))
