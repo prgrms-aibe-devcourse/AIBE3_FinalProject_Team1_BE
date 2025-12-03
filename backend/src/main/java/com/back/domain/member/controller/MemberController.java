@@ -117,7 +117,7 @@ public class MemberController implements MemberApi{
     public ResponseEntity<RsData<MemberSendCodeResBody>> sendVerificationCode(
             @RequestBody @Valid MemberSendCodeReqBody reqBody
     ) {
-        LocalDateTime expiresIn = emailService.sendVerificationCode(reqBody.email());
+        LocalDateTime expiresIn = memberService.sendEmailVerificationCode(reqBody.email());
         return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "이메일 인증이 발송되었습니다.", new MemberSendCodeResBody(expiresIn)));
     }
 

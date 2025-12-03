@@ -20,6 +20,9 @@ public class ReviewSummaryService {
     @Value("${custom.ai.review-summary-prompt}")
     private String reviewSummaryPrompt;
 
+    @Value("${custom.ai.author-review-summary-prompt}")
+    private String authorReviewSummaryPrompt;
+
     public String summarizePostReviews(Long postId) {
         List<Review> reviews = reviewQueryRepository.findTop30ByPostId(postId);
 
@@ -50,7 +53,7 @@ public class ReviewSummaryService {
                 .collect(Collectors.joining("\n"));
 
         return chatClient.prompt()
-                .system(reviewSummaryPrompt)
+                .system(authorReviewSummaryPrompt)
                 .user("후기:\n" + reviewsText)
                 .call()
                 .content();

@@ -9,6 +9,7 @@ import com.back.global.exception.ServiceException;
 import com.back.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
@@ -54,6 +55,7 @@ public class Reservation extends BaseEntity {
     private Member author;
 
     @OneToMany(mappedBy = "reservation", cascade = CascadeType.ALL, orphanRemoval = true)
+    @BatchSize(size = 100)
     private List<ReservationOption> reservationOptions = new ArrayList<>();
 
     public void addAllOptions(List<ReservationOption> reservationOptions) {

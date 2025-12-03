@@ -11,11 +11,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.back.domain.category.entity.Category;
+import com.back.domain.category.repository.CategoryRepository;
 import com.back.domain.post.dto.res.PostListResBody;
 import com.back.domain.post.entity.Post;
 import com.back.domain.post.entity.PostImage;
 import com.back.domain.post.repository.PostFavoriteRepository;
 import com.back.domain.post.repository.PostRepository;
+import com.back.domain.region.entity.Region;
+import com.back.domain.region.repository.RegionRepository;
 import com.back.global.s3.S3Uploader;
 
 @Service
@@ -24,6 +28,8 @@ public class PostSearchService {
 	private final PostVectorService postVectorService;
 	private final PostRepository postRepository;
 	private final PostFavoriteRepository postfavoriteRepository;
+	private final CategoryRepository categoryRepository;
+	private final RegionRepository regionRepository;
 	private final S3Uploader s3;
 
 	private final ChatClient rerankerClient;
@@ -36,12 +42,14 @@ public class PostSearchService {
 	private String rerankPrompt;
 
 	public PostSearchService(PostVectorService postVectorService, PostRepository postRepository,
-		PostFavoriteRepository postfavoriteRepository, S3Uploader s3,
-		@Qualifier("gpt41MiniChatClient") ChatClient rerankerClient,
+		PostFavoriteRepository postfavoriteRepository, CategoryRepository categoryRepository,
+		RegionRepository regionRepository, S3Uploader s3, @Qualifier("gpt41MiniChatClient") ChatClient rerankerClient,
 		@Qualifier("gpt51ChatClient") ChatClient answerClient) {
 		this.postVectorService = postVectorService;
 		this.postRepository = postRepository;
 		this.postfavoriteRepository = postfavoriteRepository;
+		this.categoryRepository = categoryRepository;
+		this.regionRepository = regionRepository;
 		this.s3 = s3;
 		this.rerankerClient = rerankerClient;
 		this.answerClient = answerClient;
@@ -88,17 +96,19 @@ public class PostSearchService {
 	}
 
 	private List<Long> selectRecommendedIdsWithLLM(String query, List<Post> candidates) {
-		String context = candidates.stream().map(p -> """
-			ID: %d
-			제목: %s
-			카테고리ID: %d
-			대여료: %d원
-			보증금: %d원
-			거래 방식: 수령=%s / 반납=%s
-			지역ID들: %s
-			""".formatted(p.getId(), p.getTitle(), p.getCategory().getId(), p.getFee(), p.getDeposit(),
-			p.getReceiveMethod(), p.getReturnMethod(),
-			p.getPostRegions().stream().map(r -> r.getRegion().getId()).toList())).collect(Collectors.joining("\n\n"));
+		String context = candidates.stream()
+			.map(p -> """
+				ID: %d
+				제목: %s
+				카테고리: %s
+				대여료: %d원
+				보증금: %d원
+				거래 방식: 수령=%s / 반납=%s
+				지역들: %s
+				""".formatted(p.getId(), p.getTitle(), p.getCategory().getName(), p.getFee(), p.getDeposit(),
+				p.getReceiveMethod().getDescription(), p.getReturnMethod().getDescription(),
+				p.getPostRegions().stream().map(r -> r.getRegion().getName()).toList()))
+			.collect(Collectors.joining("\n\n"));
 
 		String prompt = rerankPrompt.formatted(context, query);
 
@@ -126,19 +136,29 @@ public class PostSearchService {
 
 	public String searchWithLLM(String query, List<PostListResBody> recommendedPosts) {
 
-		String context = recommendedPosts.stream().map(p -> """
-			제목: %s
-			카테고리ID: %d
-			대여료: %d원
-			보증금: %d원
-			수령 방식: %s
-			반납 방식: %s
-			지역ID들: %s
-			""".formatted(p.title(), p.categoryId(), p.fee(), p.deposit(), p.receiveMethod(), p.returnMethod(),
-			p.regionIds())).collect(Collectors.joining("\n\n"));
+		String context = recommendedPosts.stream()
+			.map(p -> """
+				제목: %s
+				카테고리: %s
+				대여료: %d원
+				보증금: %d원
+				수령 방식: %s
+				반납 방식: %s
+				지역들: %s
+				""".formatted(p.title(), categoryName(p.categoryId()), p.fee(), p.deposit(),
+				p.receiveMethod().getDescription(), p.returnMethod().getDescription(), regionNames(p.regionIds())))
+			.collect(Collectors.joining("\n\n"));
 
 		String prompt = answerPrompt.formatted(query, context);
 
 		return answerClient.prompt(prompt).call().content();
+	}
+
+	private String categoryName(Long id) {
+		return categoryRepository.findById(id).map(Category::getName).orElse(null);
+	}
+
+	private String regionNames(List<Long> regionIds) {
+		return regionRepository.findAllById(regionIds).stream().map(Region::getName).collect(Collectors.joining(","));
 	}
 }

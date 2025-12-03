@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -23,6 +24,7 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final S3Uploader s3;
+    private final EmailService emailService;
 
     public long count() {
         return memberRepository.count();
@@ -41,6 +43,10 @@ public class MemberService {
     }
 
     public Member join(MemberJoinReqBody reqBody, MemberRole role) {
+        if (memberRepository.existsByEmail(reqBody.email())) {
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "이미 가입된 이메일입니다.");
+        }
+
         String password = passwordEncoder.encode(reqBody.password());
         Member member = new Member(reqBody.email(), password, reqBody.nickname(), role);
         return memberRepository.save(member);
@@ -99,5 +105,13 @@ public class MemberService {
         }
         member.unban();
         return MemberBannedResBody.of(member);
+    }
+
+    public LocalDateTime sendEmailVerificationCode(String email) {
+        if (memberRepository.existsByEmail(email)) {
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "이미 가입된 이메일입니다.");
+        }
+
+        return emailService.sendVerificationCode(email);
     }
 }
