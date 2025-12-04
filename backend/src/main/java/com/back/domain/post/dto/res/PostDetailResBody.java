@@ -27,7 +27,7 @@ public record PostDetailResBody(
         Boolean isFavorite,
         Boolean isBanned
 ) {
-    public static PostDetailResBody of(Post post, boolean isFavorite, List<PostImageResBody> images) {
+    public static PostDetailResBody of(Post post, boolean isFavorite, List<PostImageResBody> images, String profileImageUrl) {
 
         List<Long> regionIds = post.getPostRegions().stream()
                 .map(r -> r.getRegion().getId())
@@ -53,7 +53,7 @@ public record PostDetailResBody(
                 images,
                 post.getCreatedAt(),
                 post.getModifiedAt(),
-                PostAuthorDto.from(post.getAuthor()),
+                PostAuthorDto.from(post.getAuthor(), profileImageUrl),
                 isFavorite,
                 post.getIsBanned()
         );

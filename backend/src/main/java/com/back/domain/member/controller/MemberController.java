@@ -102,7 +102,8 @@ public class MemberController implements MemberApi{
             @PathVariable Long id
     ) {
         Member member = memberService.getById(id);
-        return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "회원 정보입니다.", new SimpleMemberDto(member)));
+        String presignedUrl = s3Uploader.generatePresignedUrl(member.getProfileImgUrl());
+        return ResponseEntity.ok(new RsData<>(HttpStatus.OK, "회원 정보입니다.", new SimpleMemberDto(member, presignedUrl)));
     }
 
     @GetMapping("/check-nickname")

@@ -8,6 +8,7 @@ import com.back.domain.reservation.entity.Reservation;
 import com.back.global.app.mcp.dto.CategoryStatsDto;
 import com.back.global.queryDsl.CustomQuerydslRepositorySupport;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import org.springframework.data.domain.Page;
@@ -111,7 +112,7 @@ public class ReservationQueryRepository extends CustomQuerydslRepositorySupport
     @Override
     public Page<Reservation> findByAuthorWithFetch(
             Member author,
-            ReservationStatus status,
+            List<ReservationStatus> status,
             String keyword,
             Pageable pageable) {
 
@@ -123,7 +124,7 @@ public class ReservationQueryRepository extends CustomQuerydslRepositorySupport
                         .leftJoin(post.author, member).fetchJoin()
                         .where(
                                 reservation.author.eq(author),
-                                statusEq(status),
+                                statusIn(status),
                                 postTitleContains(keyword)
                         ),
                 // Function<JPAQueryFactory, JPAQuery<Long>> countQuery
@@ -132,7 +133,7 @@ public class ReservationQueryRepository extends CustomQuerydslRepositorySupport
                         .from(reservation)
                         .where(
                                 reservation.author.eq(author),
-                                statusEq(status),
+                                statusIn(status),
                                 postTitleContains(keyword)
                         )
         );
@@ -208,6 +209,12 @@ public class ReservationQueryRepository extends CustomQuerydslRepositorySupport
     private BooleanExpression excludeReservationIdNe(Long excludeReservationId) {
         return excludeReservationId != null
                 ? reservation.id.ne(excludeReservationId)
+                : null;
+    }
+
+    private Predicate statusIn(List<ReservationStatus> status) {
+        return status != null && !status.isEmpty()
+                ? reservation.status.in(status)
                 : null;
     }
 

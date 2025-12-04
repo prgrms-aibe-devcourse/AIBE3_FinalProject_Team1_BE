@@ -11,11 +11,11 @@ public record SimpleMemberDto(
         Boolean isBanned,
         LocalDateTime createdAt
 ) {
-    public SimpleMemberDto(Member member){
+    public SimpleMemberDto(Member member, String presignedUrl){
         this(
                 member.getId(),
                 member.getNickname(),
-                member.getProfileImgUrl(),
+                presignedUrl,
                 member.isBanned(),
                 member.getCreatedAt()
         );

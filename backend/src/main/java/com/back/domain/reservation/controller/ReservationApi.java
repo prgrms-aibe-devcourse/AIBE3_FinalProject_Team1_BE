@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.util.List;
+
 @Tag(name = "Reservation API", description = "예약 관리 API, 인증 필요")
 public interface ReservationApi {
     @Operation(
@@ -35,7 +37,7 @@ public interface ReservationApi {
     ResponseEntity<RsData<PagePayload<GuestReservationSummaryResBody>>> getSentReservations(
             @Parameter(hidden = true) @AuthenticationPrincipal SecurityUser securityUser,
             @Parameter(description = "페이지 정보 (size=5, page=0 기본값)") @PageableDefault(size = 5, page = 0) Pageable pageable,
-            @Parameter(description = "예약 상태 필터 (선택)") @RequestParam(required = false) ReservationStatus status,
+            @Parameter(description = "예약 상태 필터 (선택)") @RequestParam(required = false) List<ReservationStatus> status,
             @Parameter(description = "검색 키워드 (선택)") @RequestParam(required = false) String keyword
     );
 

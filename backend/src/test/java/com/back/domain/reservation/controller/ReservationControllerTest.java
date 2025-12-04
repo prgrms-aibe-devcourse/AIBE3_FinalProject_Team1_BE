@@ -333,7 +333,7 @@ class ReservationControllerTest {
                 List.of(new SortOrder("id", "DESC")));
         PagePayload<GuestReservationSummaryResBody> pagePayload = new PagePayload<>(reservations, pageMeta);
 
-        when(reservationService.getSentReservations(eq(testMember), any(), eq(ReservationStatus.RENTING), isNull()))
+        when(reservationService.getSentReservations(eq(testMember), any(), eq(List.of(ReservationStatus.RENTING)), isNull()))
                 .thenReturn(pagePayload);
 
         // when & then

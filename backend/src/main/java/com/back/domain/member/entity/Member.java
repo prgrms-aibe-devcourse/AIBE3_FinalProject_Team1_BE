@@ -78,6 +78,9 @@ public class Member extends BaseEntity {
     public Member(String email, String password, String nickname, MemberRole role) {
         this(email, password, null, null, null, null, nickname, role, null);
     }
+    public Member(String email, String password, String nickname, MemberRole role, String profileImgUrl) {
+        this(email, password, null, null, null, null, nickname, role, profileImgUrl);
+    }
 
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
