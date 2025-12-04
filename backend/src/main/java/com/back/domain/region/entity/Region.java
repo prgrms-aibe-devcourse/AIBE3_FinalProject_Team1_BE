@@ -11,12 +11,14 @@ import java.util.List;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Table(name = "region")
 public class Region extends BaseEntity {
 
+    @Column(name = "name", nullable = false)
     private String name;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_id")
+    @JoinColumn(name = "parent_id", nullable = true)
     private Region parent;
 
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)

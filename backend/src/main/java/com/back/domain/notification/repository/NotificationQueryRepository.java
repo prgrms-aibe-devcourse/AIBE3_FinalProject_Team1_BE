@@ -19,7 +19,7 @@ public class NotificationQueryRepository extends CustomQuerydslRepositorySupport
 
         query.update(notification)
                 .set(notification.isRead, true)
-                .where(notification.member.id.eq(memberId)
+                .where(notification.memberId.eq(memberId)
                         .and(notification.isRead.eq(false)))
                 .execute();
     }

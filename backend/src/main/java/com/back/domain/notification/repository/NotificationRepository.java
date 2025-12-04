@@ -18,7 +18,6 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     Boolean existsByMemberIdAndIsReadFalse(Long memberId);
 
-    @EntityGraph(attributePaths = {"member"})
     Optional<Notification> findNotificationWithMemberById(Long id);
 
     Page<Notification> findAllByMemberIdOrderByCreatedAtDesc(Long memberId, Pageable pageable);

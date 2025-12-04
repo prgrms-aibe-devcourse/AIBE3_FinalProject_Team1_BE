@@ -3,6 +3,8 @@ package com.back.domain.post.controller;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.back.domain.post.dto.res.GenPostDetailResBody;
+import com.back.global.annotations.ValidateImages;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -95,6 +97,11 @@ public interface PostApi {
 
 	@Operation(summary = "게시글 후기 요약 API", description = "AI가 특정 게시글의 후기 목록을 요약합니다.")
 	ResponseEntity<RsData<String>> summarizeReviews(@PathVariable Long postId);
+
+	@Operation(summary = "이미지 기반 게시글 생성", description = "AI 가 이미지를 기반으로 게시글의 상세내용을 작성합니다.")
+	ResponseEntity<RsData<GenPostDetailResBody>> genDetail(
+			@ValidateImages @RequestPart("images") List<MultipartFile> imageFiles,
+			@RequestPart(name = "additionalInfo", required = false) String additionalInfo);
 
 	@Operation(summary = "AI 검색 API", description = "유사 게시글을 AI로 검색하고 설명을 생성합니다.")
 	ResponseEntity<RsData<?>> searchPostsWithAi(

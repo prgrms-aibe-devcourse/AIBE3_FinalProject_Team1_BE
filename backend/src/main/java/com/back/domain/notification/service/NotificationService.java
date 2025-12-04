@@ -76,11 +76,12 @@ public class NotificationService {
 
     @Transactional
     public void saveAndSendNotification(Long targetMemberId, NotificationType type, Long targetId) {
-        Member member = memberRepository.findById(targetMemberId)
-                .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND,
-                        "멤버(%d)를 찾을 수 없습니다.".formatted(targetMemberId)));
+        if (!memberRepository.existsById(targetMemberId)) {
+            throw new ServiceException(HttpStatus.NOT_FOUND,
+                    "멤버(%d)를 찾을 수 없습니다.".formatted(targetMemberId));
+        }
 
-        Notification notification = Notification.create(type, targetId, member);
+        Notification notification = Notification.create(type, targetId, targetMemberId);
         Notification saved = notificationRepository.save(notification);
 
         NotificationResBody<?> dto = EntityToResBody(saved);
@@ -104,7 +105,7 @@ public class NotificationService {
                 () -> new ServiceException(HttpStatus.NOT_FOUND, "%d번 알림을 찾을 수 없습니다.".formatted(notificationId))
         );
 
-        if (!Objects.equals(notification.getMember().getId(), MemberId)) {
+        if (!Objects.equals(notification.getMemberId(), MemberId)) {
             throw new ServiceException(HttpStatus.FORBIDDEN, "해당 알림 읽음처리 권한이 없습니다.");
         }
 
