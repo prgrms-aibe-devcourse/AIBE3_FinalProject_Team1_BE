@@ -3,9 +3,7 @@ package com.back.domain.report.service;
 import com.back.domain.member.entity.Member;
 import com.back.domain.member.repository.MemberQueryRepository;
 import com.back.domain.member.repository.MemberRepository;
-import com.back.domain.post.entity.Post;
 import com.back.domain.post.repository.PostQueryRepository;
-import com.back.domain.post.repository.PostRepository;
 import com.back.domain.report.common.ReportType;
 import com.back.domain.report.common.validator.ReportValidator;
 import com.back.domain.report.dto.ReportReqBody;
@@ -13,9 +11,7 @@ import com.back.domain.report.dto.ReportResBody;
 import com.back.domain.report.entity.Report;
 import com.back.domain.report.repository.ReportQueryRepository;
 import com.back.domain.report.repository.ReportRepository;
-import com.back.domain.review.entity.Review;
 import com.back.domain.review.repository.ReviewQueryRepository;
-import com.back.domain.review.repository.ReviewRepository;
 import com.back.global.exception.ServiceException;
 import com.back.standard.util.page.PagePayload;
 import com.back.standard.util.page.PageUt;
@@ -47,7 +43,7 @@ public class ReportService {
 
     @Transactional
     public ReportResBody postReport(ReportReqBody reqBody, long reporterId) {
-        reportValidator.validateTargetId(reqBody.reportType(), reqBody.targetId());
+        reportValidator.validateTargetId(reqBody.reportType(), reqBody.targetId(), reporterId);
 
         Member reporter = memberRepository.findById(reporterId)
                                           .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, "존재하지 않는 회원입니다."));
