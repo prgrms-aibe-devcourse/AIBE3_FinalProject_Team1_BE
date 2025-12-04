@@ -1,16 +1,13 @@
-DELETE FROM chat_message;
-DELETE FROM chat_member;
-DELETE FROM chat_room;
-DELETE FROM post;
-DELETE FROM category;
-DELETE FROM member;
+SET FOREIGN_KEY_CHECKS = 0;
 
-ALTER TABLE member      ALTER COLUMN id RESTART WITH 1;
-ALTER TABLE category    ALTER COLUMN id RESTART WITH 1;
-ALTER TABLE post        ALTER COLUMN id RESTART WITH 1;
-ALTER TABLE chat_room   ALTER COLUMN id RESTART WITH 1;
-ALTER TABLE chat_member ALTER COLUMN id RESTART WITH 1;
-ALTER TABLE chat_message ALTER COLUMN id RESTART WITH 1;
+TRUNCATE TABLE chat_message;
+TRUNCATE TABLE chat_member;
+TRUNCATE TABLE chat_room;
+TRUNCATE TABLE post;
+TRUNCATE TABLE category;
+TRUNCATE TABLE member;
+
+SET FOREIGN_KEY_CHECKS = 1;
 
 -- MEMBER --------------------------------------------------------
 INSERT INTO member (email, password, name, phone_number, address1, address2, nickname, is_banned, role, profile_img_url, created_at, modified_at)
@@ -20,11 +17,9 @@ VALUES
     ('user3@test.com', '{noop}1234', '이영희', '010-3333-3333', '서울시 마포구', '월드컵북로 789', 'lee', false, 'USER', NULL, NOW(), NOW()),
     ('user4@test.com', '{noop}1234', '박민수', '010-4444-4444', '서울시 송파구', '잠실로 101', 'park', false, 'USER', NULL, NOW(), NOW());
 
-
 -- CATEGORY --------------------------------------------------------
 INSERT INTO category (name, parent_id, created_at, modified_at)
 VALUES ('노트북', NULL, NOW(), NOW());
-
 
 -- POST -------------------------------------------------------------
 INSERT INTO post (title, content, receive_method, return_method,
@@ -45,8 +40,7 @@ VALUES
      NULL, NULL, 8000, 3000, false, 'WAIT', 3, 1, 0, NOW(), NOW()),
 
     ('사용자1의 테스트 게시글', '테스트용 게시글입니다.', 'DELIVERY', 'DELIVERY',
-    NULL, NULL, 0, 0, false, 'WAIT', 1, 1, 0, NOW(), NOW());
-
+     NULL, NULL, 0, 0, false, 'WAIT', 1, 1, 0, NOW(), NOW());
 
 -- CHAT_ROOM --------------------------------------------------------
 INSERT INTO chat_room (post_id, post_title_snapshot, last_message, last_message_time, created_at, modified_at)
@@ -54,7 +48,6 @@ VALUES
     (1, '캠핑 텐트 대여', NULL, NULL, NOW(), NOW()),
     (2, '노트북 대여합니다', NULL, NULL, NOW(), NOW()),
     (3, '카메라 렌탈', NULL, NULL, NOW(), NOW());
-
 
 -- CHAT_MEMBER ------------------------------------------------------
 -- ChatRoom 1 (Post author: user2, Guest: user1)
@@ -74,7 +67,6 @@ INSERT INTO chat_member (chat_room_id, member_id, last_read_message_id, created_
 VALUES
     (3, 4, 0, NOW(), NOW()),  -- host
     (3, 1, 0, NOW(), NOW());  -- guest
-
 
 -- CHAT_MESSAGE ---------------------------------------------------------
 INSERT INTO chat_message (content, chat_room_id, chat_member_id, created_at, modified_at)
