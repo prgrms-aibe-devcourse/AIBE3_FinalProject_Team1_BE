@@ -1,32 +1,23 @@
 package com.back.domain.report.controller;
 
 import com.back.BaseContainerIntegrationTest;
-import com.back.WithMockMember;
-import com.back.domain.category.entity.Category;
 import com.back.domain.member.common.MemberRole;
 import com.back.domain.member.entity.Member;
-import com.back.domain.post.entity.Post;
 import com.back.domain.report.common.ReportType;
 import com.back.domain.report.dto.ReportReqBody;
 import com.back.domain.report.entity.Report;
 import com.back.domain.report.repository.ReportRepository;
-import com.back.domain.reservation.entity.Reservation;
-import com.back.domain.review.dto.ReviewWriteReqBody;
-import com.back.domain.review.entity.Review;
 import jakarta.persistence.EntityManager;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithAnonymousUser;
+import org.springframework.security.test.context.support.WithUserDetails;
+import org.springframework.test.context.jdbc.Sql;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
-import static com.back.domain.post.common.ReceiveMethod.ANY;
-import static com.back.domain.post.common.ReturnMethod.DELIVERY;
-import static com.back.domain.reservation.common.ReservationDeliveryMethod.DIRECT;
-import static com.back.domain.reservation.common.ReservationStatus.RETURN_COMPLETED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -34,41 +25,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@Sql("/sql/report/report.sql")
 class ReportControllerTest extends BaseContainerIntegrationTest {
 
     @Autowired EntityManager em;
     @Autowired ReportRepository reportRepository;
 
-    @BeforeEach
-    void setup() {
-        em.createNativeQuery("SET FOREIGN_KEY_CHECKS = 0").executeUpdate();
-
-        em.createNativeQuery("TRUNCATE TABLE review").executeUpdate();
-        em.createNativeQuery("TRUNCATE TABLE post").executeUpdate();
-        em.createNativeQuery("TRUNCATE TABLE category").executeUpdate();
-        em.createNativeQuery("TRUNCATE TABLE member").executeUpdate();
-
-        em.createNativeQuery("SET FOREIGN_KEY_CHECKS = 1").executeUpdate();
-    }
-
     @Test
     @DisplayName("POST 타입 신고 생성 성공")
-    @WithMockMember
+    @WithUserDetails("test-1@email.com")
     void createReport_PostType_Success() throws Exception {
         // given
-        Member member = new Member("test@email.com", "test1234", "test-member", MemberRole.USER);
-        em.persist(member);
-        Category category = Category.create("IT", null);
-        em.persist(category);
-
-        Member author = new Member("author@email.com", "test1234", "test-author", MemberRole.USER);
-        em.persist(author);
-        Post post = Post.of("title", "content", ANY, DELIVERY, "", "", 1000, 100, author, category);
-        em.persist(post);
-
+        long targetId = 2L;
         ReportReqBody reportReqBody = new ReportReqBody(
                 ReportType.POST,
-                post.getId(),
+                targetId,
                 "부적절한 게시글입니다"
         );
 
@@ -81,7 +52,7 @@ class ReportControllerTest extends BaseContainerIntegrationTest {
                         status().isCreated(),
                         jsonPath("$.data.id").isNumber(),
                         jsonPath("$.data.reportType").value("POST"),
-                        jsonPath("$.data.targetId").value(post.getId()),
+                        jsonPath("$.data.targetId").value(targetId),
                         jsonPath("$.data.comment").value(reportReqBody.comment())
                 )
                 .andDo(print());
@@ -90,23 +61,19 @@ class ReportControllerTest extends BaseContainerIntegrationTest {
 
         List<Report> reports = reportRepository.findAll();
         assertThat(reports).hasSize(1);
-        assertThat(reports.getFirst().getTargetId()).isEqualTo(post.getId());
+        assertThat(reports.getFirst().getTargetId()).isEqualTo(targetId);
     }
 
     @Test
     @DisplayName("MEMBER 타입 신고 생성 성공")
-    @WithMockMember
+    @WithUserDetails("test-1@email.com")
     void createReport_MemberType_Success() throws Exception {
         // given
-        Member reporter = new Member("test@email1.com", "test1234", "test-reporter", MemberRole.USER);
-        em.persist(reporter);
-
-        Member reported = new Member("test@email2.com", "test1234", "test-reported", MemberRole.USER);
-        em.persist(reported);
+        long targetId = 2L;
 
         ReportReqBody reportReqBody = new ReportReqBody(
                 ReportType.MEMBER,
-                reported.getId(),
+                targetId,
                 "부적절한 사용자입니다"
         );
 
@@ -119,7 +86,7 @@ class ReportControllerTest extends BaseContainerIntegrationTest {
                        status().isCreated(),
                        jsonPath("$.data.id").isNumber(),
                        jsonPath("$.data.reportType").value("MEMBER"),
-                       jsonPath("$.data.targetId").value(reported.getId()),
+                       jsonPath("$.data.targetId").value(targetId),
                        jsonPath("$.data.comment").value(reportReqBody.comment())
                )
                .andDo(print());
@@ -128,34 +95,18 @@ class ReportControllerTest extends BaseContainerIntegrationTest {
 
         List<Report> reports = reportRepository.findAll();
         assertThat(reports).hasSize(1);
-        assertThat(reports.getFirst().getTargetId()).isEqualTo(reported.getId());
+        assertThat(reports.getFirst().getTargetId()).isEqualTo(targetId);
     }
 
     @Test
     @DisplayName("REVIEW 타입 신고 생성 성공")
-    @WithMockMember
+    @WithUserDetails("test-1@email.com")
     void createReport_ReviewType_Success() throws Exception {
         // given
-        Member member = new Member("test@email.com", "test1234", "test-member", MemberRole.USER);
-        em.persist(member);
-
-        Category category = Category.create("IT", null);
-        em.persist(category);
-        Post post = Post.of("title", "content", ANY, DELIVERY, "", "", 1000, 100, member, category);
-        em.persist(post);
-
-        Member author = new Member("author@email.com", "test1234", "test-author", MemberRole.USER);
-        em.persist(author);
-        LocalDateTime now = LocalDateTime.now();
-        Reservation reservation = new Reservation(RETURN_COMPLETED, DIRECT, "", "", DIRECT, now, now.plusDays(2), author, post);
-        em.persist(reservation);
-
-        Review review = Review.create(reservation, new ReviewWriteReqBody(1, 1, 1, "최악이었습니다"));
-        em.persist(review);
-
+        long targetId = 1L;
         ReportReqBody reportReqBody = new ReportReqBody(
                 ReportType.REVIEW,
-                review.getId(),
+                targetId,
                 "부적절한 리뷰입니다"
         );
 
@@ -168,7 +119,7 @@ class ReportControllerTest extends BaseContainerIntegrationTest {
                        status().isCreated(),
                        jsonPath("$.data.id").isNumber(),
                        jsonPath("$.data.reportType").value("REVIEW"),
-                       jsonPath("$.data.targetId").value(review.getId()),
+                       jsonPath("$.data.targetId").value(targetId),
                        jsonPath("$.data.comment").value(reportReqBody.comment())
                )
                .andDo(print());
@@ -177,7 +128,7 @@ class ReportControllerTest extends BaseContainerIntegrationTest {
 
         List<Report> reports = reportRepository.findAll();
         assertThat(reports).hasSize(1);
-        assertThat(reports.getFirst().getTargetId()).isEqualTo(review.getId());
+        assertThat(reports.getFirst().getTargetId()).isEqualTo(targetId);
     }
 
     private void clearContext() {
@@ -187,6 +138,7 @@ class ReportControllerTest extends BaseContainerIntegrationTest {
 
     @Test
     @DisplayName("인증되지 않은 사용자의 신고 생성 실패")
+    @WithAnonymousUser
     void createReport_Unauthorized() throws Exception {
         // given
         ReportReqBody reportReqBody = new ReportReqBody(
@@ -205,12 +157,13 @@ class ReportControllerTest extends BaseContainerIntegrationTest {
                )
                .andDo(print());
 
+        clearContext();
         assertThat(reportRepository.count()).isEqualTo(0);
     }
 
     @Test
     @DisplayName("존재하지 않는 대상에 대한 신고 실패")
-    @WithMockMember
+    @WithUserDetails("test-1@email.com")
     void createReport_TargetNotFound() throws Exception {
         // given
         ReportReqBody reportReqBody = new ReportReqBody(
@@ -231,31 +184,25 @@ class ReportControllerTest extends BaseContainerIntegrationTest {
                )
                .andDo(print());
 
+        clearContext();
         assertThat(reportRepository.count()).isEqualTo(0);
     }
 
     @Test
     @DisplayName("중복 신고 실패")
-    @WithMockMember
+    @WithUserDetails("test-1@email.com")
     void createReport_DuplicateReport() throws Exception {
         // given
-        Member member = new Member("test@email.com", "test1234", "test-member", MemberRole.USER);
-        em.persist(member);
+        Member existingMember = em.find(Member.class, 1L);
+        Member targetMember = new Member("member@email.com", "test1234", "test-member", MemberRole.USER);
+        em.persist(targetMember);
 
-        Category category = Category.create("IT", null);
-        em.persist(category);
-
-        Member author = new Member("author@email.com", "test1234", "test-author", MemberRole.USER);
-        em.persist(author);
-        Post post = Post.of("title", "content", ANY, DELIVERY, "", "", 1000, 100, author, category);
-        em.persist(post);
-
-        Report report = Report.createPostType(post.getId(), "이미 신고됨", member);
+        Report report = Report.createMemberType(targetMember.getId(), "이미 신고됨", existingMember);
         em.persist(report);
 
         ReportReqBody reportReqBody = new ReportReqBody(
-                ReportType.POST,
-                post.getId(),
+                ReportType.MEMBER,
+                targetMember.getId(),
                 "중복 신고"
         );
 
@@ -271,20 +218,18 @@ class ReportControllerTest extends BaseContainerIntegrationTest {
                )
                .andDo(print());
 
+        clearContext();
         assertThat(reportRepository.count()).isEqualTo(1);
     }
 
     @Test
     @DisplayName("본인 신고 실패")
-    @WithMockMember
+    @WithUserDetails("test-1@email.com")
     void createReport_SelfReport() throws Exception {
         // given
-        Member member = new Member("test@email.com", "test1234", "test-member", MemberRole.USER);
-        em.persist(member);
-
         ReportReqBody reportReqBody = new ReportReqBody(
                 ReportType.MEMBER,
-                1L,  // testUser 본인의 ID
+                1L,
                 "본인 신고"
         );
 
@@ -300,17 +245,15 @@ class ReportControllerTest extends BaseContainerIntegrationTest {
                )
                .andDo(print());
 
+        clearContext();
         assertThat(reportRepository.count()).isEqualTo(0);
     }
 
     @Test
     @DisplayName("reportType만 null인 경우")
-    @WithMockMember
+    @WithUserDetails("test-1@email.com")
     void createReport_NullReportType() throws Exception {
         // given
-        Member member = new Member("test@email.com", "test1234", "test-member", MemberRole.USER);
-        em.persist(member);
-
         ReportReqBody invalidReqBody = new ReportReqBody(
                 null,  // reportType null
                 100L,
@@ -329,20 +272,18 @@ class ReportControllerTest extends BaseContainerIntegrationTest {
                )
                .andDo(print());
 
+        clearContext();
         assertThat(reportRepository.count()).isEqualTo(0);
     }
 
     @Test
     @DisplayName("targetId만 null인 경우")
-    @WithMockMember
+    @WithUserDetails("test-1@email.com")
     void createReport_NullTargetId() throws Exception {
         // given
-        Member member = new Member("test@email.com", "test1234", "test-member", MemberRole.USER);
-        em.persist(member);
-
         ReportReqBody invalidReqBody = new ReportReqBody(
                 ReportType.POST,
-                null,  // targetId null
+                null,
                 "Valid comment"
         );
 
@@ -358,17 +299,15 @@ class ReportControllerTest extends BaseContainerIntegrationTest {
                )
                .andDo(print());
 
+        clearContext();
         assertThat(reportRepository.count()).isEqualTo(0);
     }
 
     @Test
     @DisplayName("comment가 빈 문자열인 경우")
-    @WithMockMember
+    @WithUserDetails("test-1@email.com")
     void createReport_BlankComment() throws Exception {
         // given
-        Member member = new Member("test@email.com", "test1234", "test-member", MemberRole.USER);
-        em.persist(member);
-
         ReportReqBody invalidReqBody = new ReportReqBody(
                 ReportType.POST,
                 100L,
@@ -387,17 +326,15 @@ class ReportControllerTest extends BaseContainerIntegrationTest {
                )
                .andDo(print());
 
+        clearContext();
         assertThat(reportRepository.count()).isEqualTo(0);
     }
 
     @Test
     @DisplayName("comment가 공백만 있는 경우")
-    @WithMockMember
+    @WithUserDetails("test-1@email.com")
     void createReport_WhitespaceComment() throws Exception {
         // given
-        Member member = new Member("test@email.com", "test1234", "test-member", MemberRole.USER);
-        em.persist(member);
-
         ReportReqBody invalidReqBody = new ReportReqBody(
                 ReportType.POST,
                 100L,
@@ -416,17 +353,15 @@ class ReportControllerTest extends BaseContainerIntegrationTest {
                )
                .andDo(print());
 
+        clearContext();
         assertThat(reportRepository.count()).isEqualTo(0);
     }
 
     @Test
     @DisplayName("잘못된 요청 본문으로 신고 생성 실패")
-    @WithMockMember
+    @WithUserDetails("test-1@email.com")
     void createReport_InvalidRequestBody() throws Exception {
         // given
-        Member member = new Member("test@email.com", "test1234", "test-member", MemberRole.USER);
-        em.persist(member);
-
         ReportReqBody invalidReqBody = new ReportReqBody(
                 null,
                 null,
@@ -449,6 +384,7 @@ class ReportControllerTest extends BaseContainerIntegrationTest {
                )
                .andDo(print());
 
+        clearContext();
         assertThat(reportRepository.count()).isEqualTo(0);
     }
 }
