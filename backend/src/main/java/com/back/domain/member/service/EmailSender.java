@@ -12,7 +12,7 @@ public class EmailSender {
 
     private final JavaMailSender mailSender;
 
-    @Async("notificationExecutor")
+    @Async("emailExecutor")
     public void sendMailAsync(String email, String code) {
         String subject = "[Chwi-Meet] 이메일 인증코드 안내";
         String content = """
