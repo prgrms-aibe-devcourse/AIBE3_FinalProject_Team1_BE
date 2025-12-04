@@ -15,6 +15,7 @@ import com.back.global.exception.ServiceException;
 import com.back.global.s3.S3Uploader;
 import com.back.standard.util.page.PagePayload;
 import com.back.standard.util.page.PageUt;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,7 +28,6 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class ChatService {
 
     private final MemberRepository memberRepository;
@@ -42,21 +42,21 @@ public class ChatService {
     private final ChatNotificationPublisher chatNotificationPublisher;
     private final S3Uploader s3;
 
+    private static final String NOTI_NEW_ROOM = "NEW_ROOM";
+    private static final String NOTI_NEW_MESSAGE = "NEW_MESSAGE";
+
     @Transactional
     public CreateChatRoomResBody createOrGetChatRoom(Long postId, Long memberId) {
+
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, "존재하지 않는 게시글입니다."));
 
         Long hostId = post.getAuthor().getId();
-
-        if (hostId.equals(memberId)) {
-            throw new ServiceException(HttpStatus.BAD_REQUEST, "본인과 채팅방을 만들 수 없습니다.");
-        }
+        validateNotSelfChat(hostId, memberId);
 
         Optional<Long> existingRoom = chatRoomQueryRepository.getChatRoomId(postId, memberId);
         if (existingRoom.isPresent()) {
-            Long roomId = existingRoom.get();
-            return new CreateChatRoomResBody("이미 존재하는 채팅방입니다.", roomId);
+            return new CreateChatRoomResBody("이미 존재하는 채팅방입니다.", existingRoom.get());
         }
 
         Member guest = memberRepository.findById(memberId)
@@ -65,12 +65,23 @@ public class ChatService {
         ChatRoom chatRoom = ChatRoom.create(postId, post.getTitle());
         chatRoomRepository.save(chatRoom);
 
-        ChatMember hostMember = ChatMember.create(chatRoom.getId(), hostId);
-        ChatMember guestMember = ChatMember.create(chatRoom.getId(), memberId);
-        chatMemberRepository.save(hostMember);
-        chatMemberRepository.save(guestMember);
+        chatMemberRepository.save(ChatMember.create(chatRoom.getId(), hostId));
+        chatMemberRepository.save(ChatMember.create(chatRoom.getId(), memberId));
 
-        OtherMemberDto otherMemberDto = new OtherMemberDto(
+        notifyNewRoom(hostId, chatRoom, post, guest);
+
+        return new CreateChatRoomResBody("채팅방이 생성되었습니다.", chatRoom.getId());
+    }
+
+    private void validateNotSelfChat(Long hostId, Long guestId) {
+        if (hostId.equals(guestId)) {
+            throw new ServiceException(HttpStatus.BAD_REQUEST, "본인과 채팅방을 만들 수 없습니다.");
+        }
+    }
+
+    private void notifyNewRoom(Long hostId, ChatRoom chatRoom, Post post, Member guest) {
+
+        OtherMemberDto guestDto = new OtherMemberDto(
                 guest.getId(),
                 guest.getNickname(),
                 s3.generatePresignedUrl(guest.getProfileImgUrl())
@@ -80,7 +91,7 @@ public class ChatService {
                 chatRoom.getId(),
                 chatRoom.getCreatedAt(),
                 new ChatPostDto(post.getTitle()),
-                otherMemberDto,
+                guestDto,
                 null,
                 null,
                 0
@@ -88,105 +99,127 @@ public class ChatService {
 
         chatNotificationPublisher.publish(
                 hostId,
-                new ChatNotiDto("NEW_ROOM", newRoom)
+                new ChatNotiDto(NOTI_NEW_ROOM, newRoom)
         );
-
-        return new CreateChatRoomResBody("채팅방이 생성되었습니다.", chatRoom.getId());
     }
 
+    @Transactional(readOnly = true)
     public PagePayload<ChatRoomListDto> getMyChatRooms(Long memberId, Pageable pageable, String keyword) {
+
         Page<ChatRoomListDto> chatRooms = chatRoomQueryRepository.getMyChatRooms(memberId, pageable, keyword);
 
         Page<ChatRoomListDto> enrichedPage = chatRooms.map(dto -> {
-            String key = "unread:" + memberId + ":" + dto.id();
-            String unreadStr = redisTemplate.opsForValue().get(key);
-            Integer unreadCount = unreadStr == null ? 0 : Integer.parseInt(unreadStr);
+            String key = unreadKey(memberId, dto.id());
+            Integer unreadCount = getUnreadCount(key);
 
-            String otherProfileImgUrl = dto.otherMember().profileImgUrl();
-            String presignedUrl = s3.generatePresignedUrl(otherProfileImgUrl);
+            String presignedUrl = s3.generatePresignedUrl(dto.otherMember().profileImgUrl());
             return dto.withUnreadCount(unreadCount, presignedUrl);
         });
 
         return PageUt.of(enrichedPage);
     }
 
+    @Transactional(readOnly = true)
     public ChatRoomDto getChatRoom(Long chatRoomId, Long memberId) {
+
         ChatRoom chatRoom = chatRoomQueryRepository.getChatRoom(chatRoomId)
                 .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, "존재하지 않는 채팅방입니다."));
 
-        boolean isMember = chatRoomQueryRepository.isMemberInChatRoom(chatRoomId, memberId);
-        if (!isMember) {
+        if (!chatRoomQueryRepository.isMemberInChatRoom(chatRoomId, memberId)) {
             throw new ServiceException(HttpStatus.FORBIDDEN, "해당 채팅방에 접근할 수 없습니다.");
         }
 
         Member otherMember = chatRoomQueryRepository.findOtherMember(chatRoomId, memberId)
                 .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, "채팅 상대 정보가 없습니다."));
 
-        ChatPostDto chatPostDto = new ChatPostDto(chatRoom.getPostTitleSnapshot());
-        OtherMemberDto otherMemberDto = new OtherMemberDto(
-                otherMember.getId(),
-                otherMember.getNickname(),
-                s3.generatePresignedUrl(otherMember.getProfileImgUrl())
+        return new ChatRoomDto(
+                chatRoom.getId(),
+                chatRoom.getCreatedAt(),
+                new ChatPostDto(chatRoom.getPostTitleSnapshot()),
+                new OtherMemberDto(
+                        otherMember.getId(),
+                        otherMember.getNickname(),
+                        s3.generatePresignedUrl(otherMember.getProfileImgUrl())
+                )
         );
-
-        return new ChatRoomDto(chatRoom.getId(), chatRoom.getCreatedAt(), chatPostDto, otherMemberDto);
     }
 
+    @Transactional(readOnly = true)
     public PagePayload<ChatMessageDto> getChatMessageList(Long chatRoomId, Long memberId, Pageable pageable) {
-        boolean isMember = chatRoomQueryRepository.isMemberInChatRoom(chatRoomId, memberId);
-        if (!isMember) {
+
+        if (!chatRoomQueryRepository.isMemberInChatRoom(chatRoomId, memberId)) {
             throw new ServiceException(HttpStatus.FORBIDDEN, "채팅방이 존재하지 않거나 접근 권한이 없습니다.");
         }
 
-        Page<ChatMessageDto> chatMessages = chatMessageQueryRepository.getChatMessages(chatRoomId, memberId, pageable);
-
-        return PageUt.of(chatMessages);
+        return PageUt.of(chatMessageQueryRepository.getChatMessages(chatRoomId, memberId, pageable));
     }
 
     @Transactional
     public void saveMessage(Long chatRoomId, SendChatMessageDto body, Long memberId) {
-        String content = body.content();
 
         ChatMember chatMember = chatRoomQueryRepository.findChatMember(chatRoomId, memberId)
                 .orElseThrow(() -> new ServiceException(HttpStatus.FORBIDDEN, "채팅방이 존재하지 않거나 접근 권한이 없습니다."));
 
-        ChatMessage chatMessage = ChatMessage.create(content, chatRoomId, chatMember.getId());
+        ChatMessage chatMessage = ChatMessage.create(body.content(), chatRoomId, chatMember.getId());
         chatMessageRepository.save(chatMessage);
 
         Long otherMemberId = chatRoomQueryRepository.findOtherMemberId(chatRoomId, memberId)
                 .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, "채팅 상대를 찾을 수 없습니다."));
 
-        String key = "unread:" + otherMemberId + ":" + chatRoomId;
-        redisTemplate.opsForValue().increment(key);
+        redisTemplate.opsForValue().increment(unreadKey(otherMemberId, chatRoomId));
 
+        updateChatRoomLastMessage(chatRoomId, chatMessage);
+
+        publishMessageAndNotification(chatRoomId, memberId, otherMemberId, chatMessage);
+    }
+
+    private void updateChatRoomLastMessage(Long chatRoomId, ChatMessage chatMessage) {
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
                 .orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, "존재하지 않는 채팅방입니다."));
 
         chatRoom.updateLastMessage(chatMessage.getContent(), chatMessage.getCreatedAt());
+    }
 
-        ChatMessageDto chatMessageDto = new ChatMessageDto(
+    private void publishMessageAndNotification(Long chatRoomId, Long senderId, Long receiverId, ChatMessage chatMessage) {
+
+        ChatMessageDto dto = new ChatMessageDto(
                 chatMessage.getId(),
-                memberId,
+                senderId,
                 chatMessage.getContent(),
                 chatMessage.getCreatedAt()
         );
 
-        chatMessagePublisher.publish(chatRoomId, chatMessageDto);
+        chatMessagePublisher.publish(chatRoomId, dto);
 
         chatNotificationPublisher.publish(
-                otherMemberId,
-                new ChatNotiDto("NEW_MESSAGE", NewMessageNotiDto.from(chatRoomId, chatMessageDto))
+                receiverId,
+                new ChatNotiDto(NOTI_NEW_MESSAGE, NewMessageNotiDto.from(chatRoomId, dto))
         );
     }
 
     @Transactional
     public void markAsRead(Long chatRoomId, Long memberId, Long lastMessageId) {
+
         ChatMember chatMember = chatRoomQueryRepository.findChatMember(chatRoomId, memberId)
                 .orElseThrow(() -> new ServiceException(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."));
 
         chatMember.updateLastReadMessageId(lastMessageId);
 
-        String key = "unread:" + memberId + ":" + chatRoomId;
-        redisTemplate.delete(key);
+        redisTemplate.delete(unreadKey(memberId, chatRoomId));
+    }
+
+    private Integer getUnreadCount(String key) {
+        String unreadStr = redisTemplate.opsForValue().get(key);
+        if (unreadStr == null) return 0;
+
+        try {
+            return Integer.parseInt(unreadStr);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private String unreadKey(Long memberId, Long chatRoomId) {
+        return "unread:" + memberId + ":" + chatRoomId;
     }
 }
