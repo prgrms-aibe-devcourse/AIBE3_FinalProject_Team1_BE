@@ -4,7 +4,6 @@ import com.back.domain.reservation.common.ReservationStatus;
 import com.back.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
-import org.checkerframework.checker.units.qual.C;
 
 @Entity
 @Getter
