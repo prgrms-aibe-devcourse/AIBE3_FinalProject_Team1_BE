@@ -131,4 +131,14 @@ class PostControllerTest {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.msg").value("게시글이 삭제되었습니다."));
 	}
+
+	@Test
+	@DisplayName("다른 사용자의 게시글 삭제 시 실패 테스트")
+	@WithUserDetails("user1@example.com")
+	void deletePost_fail() throws Exception {
+
+		mockMvc.perform(delete("/api/v1/posts/{id}", 4L))
+			.andExpect(status().isForbidden())
+			.andExpect(jsonPath("$.msg").value("본인의 게시글만 삭제할 수 있습니다."));
+	}
 }
