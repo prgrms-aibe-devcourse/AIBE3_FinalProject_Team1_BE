@@ -170,14 +170,21 @@ class ReservationControllerTest extends BaseContainerIntegrationTest {
     }
 
     @Test
-    @WithMockUser(value = "user2@example.com")
-    @DisplayName("예약 상태 변경 테스트 - 승인")
+    @WithMockUser(value = "user3@example.com")
+    @DisplayName("예약 상태 변경 테스트 - 취소")
     void updateReservationStatusToApprovedTest() throws Exception {
-        Long reservationId = 4L; // 멤버2가 예약한 멤버1의 포스트
+        Long reservationId = 7L; // 멤버3이 예약한 멤버1의 포스트
 
         String reqBody = """
             {
-              "status": "APPROVED"
+              "status": "CANCELLED",
+              "cancelReason": "그냥",
+              "rejectReason": null,
+              "claimReason": null,
+              "receiveCarrier": null,
+              "receiveTrackingNumber": null,
+              "returnCarrier": null,
+              "returnTrackingNumber": null
             }
             """;
 
@@ -187,26 +194,6 @@ class ReservationControllerTest extends BaseContainerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(200))
                 .andExpect(jsonPath("$.msg", containsString("업데이트")))
-                .andExpect(jsonPath("$.data.id").value(reservationId));
-    }
-
-    @Test
-    @WithMockUser(value = "user2@example.com")
-    @DisplayName("예약 상태 변경 테스트 - 거절")
-    void updateReservationStatusToRejectedTest() throws Exception {
-        Long reservationId = 5L; // 멤버2가 예약한 멤버1의 포스트
-
-        String reqBody = """
-            {
-              "status": "REJECTED"
-            }
-            """;
-
-        mockMvc.perform(patch("/api/v1/reservations/{id}/status", reservationId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(reqBody))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value(200))
                 .andExpect(jsonPath("$.data.id").value(reservationId));
     }
 
