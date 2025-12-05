@@ -1,3 +1,7 @@
+SET FOREIGN_KEY_CHECKS = 0;
+TRUNCATE TABLE reservation;
+SET FOREIGN_KEY_CHECKS = 1;
+
 INSERT INTO reservation (id, created_at, modified_at, cancel_reason, claim_reason, receive_address1, receive_address2, receive_carrier, receive_method, receive_tracking_number, reject_reason, reservation_end_at, reservation_start_at, return_carrier, return_method, return_tracking_number, status, author_id, post_id)
 VALUES
     -- 멤버 1이 예약한 멤버 2 Post (Post ID: 4,5,6)
