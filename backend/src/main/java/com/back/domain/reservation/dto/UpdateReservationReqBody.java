@@ -1,11 +1,9 @@
 package com.back.domain.reservation.dto;
 
 import com.back.domain.reservation.common.ReservationDeliveryMethod;
-import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
