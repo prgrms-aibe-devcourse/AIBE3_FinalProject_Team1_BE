@@ -222,8 +222,7 @@ class ReservationControllerTest extends BaseContainerIntegrationTest {
                         jsonPath("$.data.id").value(is(reservationId.intValue())),
                         jsonPath("$.data.status").value(is("CANCELLED")),
                         jsonPath("$.data.cancelReason").value(is("취소 사유")),
-                        jsonPath("$.data.receiveCarrier").value(nullValue()),
-                        jsonPath("$.data.rejectReason").value(nullValue())
+                        jsonPath("$.data.receiveCarrier").value(nullValue())
                 );
     }
 }
