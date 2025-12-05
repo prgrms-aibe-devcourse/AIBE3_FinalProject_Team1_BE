@@ -42,7 +42,7 @@ class ChatControllerTest {
     private ChatMemberRepository chatMemberRepository;
 
     @Test
-    @WithUserDetails(value = "user1@test.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "user1@example.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     @DisplayName("채팅방 생성 성공")
     void createChatRoom_success() throws Exception {
         // given
@@ -64,7 +64,7 @@ class ChatControllerTest {
     }
 
     @Test
-    @WithUserDetails(value = "user1@test.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "user1@example.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     @DisplayName("이미 존재하는 채팅방일 때")
     void createChatRoom_alreadyExists() throws Exception {
         // given
@@ -104,7 +104,7 @@ class ChatControllerTest {
     }
 
     @Test
-    @WithUserDetails(value = "user1@test.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "user1@example.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     @DisplayName("본인과 채팅방 생성 시도 - 예외 발생")
     void createChatRoom_withSelf_shouldThrow() throws Exception {
         // given
@@ -125,7 +125,7 @@ class ChatControllerTest {
     }
 
     @Test
-    @WithUserDetails(value = "user1@test.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "user1@example.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     @DisplayName("채팅방 목록 조회 - 검색어 없음")
     void getMyChatRooms_withoutKeyword() throws Exception {
         // given
@@ -147,7 +147,7 @@ class ChatControllerTest {
     }
 
     @Test
-    @WithUserDetails(value = "user1@test.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "user1@example.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     @DisplayName("채팅방 목록 조회 - 게시글 제목으로 검색")
     void getMyChatRooms_searchByPostTitle_tent() throws Exception {
         // given
@@ -175,7 +175,7 @@ class ChatControllerTest {
     }
 
     @Test
-    @WithUserDetails(value = "user1@test.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "user1@example.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     @DisplayName("채팅방 목록 조회 - 상대방 닉네임으로 검색")
     void getMyChatRooms_searchByMemberNickname() throws Exception {
         // given
@@ -203,7 +203,7 @@ class ChatControllerTest {
     }
 
     @Test
-    @WithUserDetails(value = "user1@test.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "user1@example.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     @DisplayName("채팅방 목록 조회 - 페이징 테스트")
     void getMyChatRooms_pagination() throws Exception {
         // given
@@ -248,7 +248,7 @@ class ChatControllerTest {
     }
 
     @Test
-    @WithUserDetails(value = "user1@test.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "user1@example.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     @DisplayName("채팅방 상세 정보 조회 성공")
     void getChatRoom_success() throws Exception {
         // given
@@ -274,7 +274,7 @@ class ChatControllerTest {
     }
 
     @Test
-    @WithUserDetails(value = "user1@test.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "user1@example.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     @DisplayName("존재하지 않는 채팅방 조회 시도")
     void getChatRoom_notFound() throws Exception {
         // given
@@ -292,7 +292,7 @@ class ChatControllerTest {
     }
 
     @Test
-    @WithUserDetails(value = "user2@test.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "user2@example.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     @DisplayName("권한 없는 채팅방 조회 시도")
     void getChatRoom_forbidden() throws Exception {
         // given
@@ -310,7 +310,7 @@ class ChatControllerTest {
     }
 
     @Test
-    @WithUserDetails(value = "user1@test.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "user1@example.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     @DisplayName("채팅방 내 메시지 목록 조회 성공")
     void getChatRoomMessages_success() throws Exception {
         // given
@@ -335,7 +335,7 @@ class ChatControllerTest {
     }
 
     @Test
-    @WithUserDetails(value = "user1@test.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @WithUserDetails(value = "user1@example.com", setupBefore = TestExecutionEvent.TEST_EXECUTION)
     @DisplayName("읽음 처리 성공 - lastMessageId 업데이트")
     void markAsRead_success() throws Exception {
         // given
