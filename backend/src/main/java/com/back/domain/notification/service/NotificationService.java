@@ -34,7 +34,7 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final NotificationQueryRepository notificationQueryRepository;
     private final Map<NotificationType, NotificationDataMapper<? extends NotificationData>> mapperRegistry;
-    private final Map<NotificationType.GroupType, Function<List<Long>, Map<Long, ?>>> batchLoaders = new HashMap<>();
+    private final Map<NotificationType.GroupType, Function<List<Long>, Map<Long, ?>>> batchLoaders;
     private final SseNotificationService sseNotificationService;
 
     @Transactional
@@ -103,6 +103,7 @@ public class NotificationService {
             List<Long> targetIds = entry.getValue();
             Function<List<Long>, Map<Long, ?>> loader = batchLoaders.get(groupType);
             if (loader != null) {
+                System.out.println("진입");
                 loadedEntities.put(groupType, loader.apply(targetIds));
             }
         }
