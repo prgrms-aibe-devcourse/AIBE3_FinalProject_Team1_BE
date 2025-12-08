@@ -27,7 +27,6 @@ public class ReservationStatusScheduler {
                 .withIdentity("reservationStatusTrigger", "reservation")
                 .withSchedule(
                         CronScheduleBuilder.dailyAtHourAndMinute(17, 0)
-//                         SimpleScheduleBuilder.simpleSchedule().withIntervalInSeconds(30).repeatForever()
                 )
                 .build();
     }

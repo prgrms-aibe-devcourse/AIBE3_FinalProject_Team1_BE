@@ -25,7 +25,6 @@ import java.util.stream.Collectors;
 import static com.back.domain.category.entity.QCategory.category;
 import static com.back.domain.member.entity.QMember.member;
 import static com.back.domain.post.entity.QPost.post;
-import static com.back.domain.post.entity.QPostImage.postImage;
 import static com.back.domain.post.entity.QPostOption.postOption;
 import static com.back.domain.reservation.common.ReservationStatus.*;
 import static com.back.domain.reservation.entity.QReservation.reservation;
@@ -34,7 +33,6 @@ import static com.back.domain.reservation.entity.QReservationOption.reservationO
 @Repository
 public class ReservationQueryRepository extends CustomQuerydslRepositorySupport{
 
-    // 종료된 상태 목록
     private static final List<ReservationStatus> TERMINATED_STATUSES = List.of(
             ReservationStatus.CANCELLED,
             ReservationStatus.REJECTED,
@@ -60,7 +58,7 @@ public class ReservationQueryRepository extends CustomQuerydslRepositorySupport{
                         statusNotIn(ReservationStatus.CANCELLED, ReservationStatus.REJECTED),
                         dateOverlap(startAt, endAt)
                 )
-                .fetchFirst();  // LIMIT 1
+                .fetchFirst();
 
         return result != null;
     }
@@ -73,7 +71,7 @@ public class ReservationQueryRepository extends CustomQuerydslRepositorySupport{
                         authorIdEq(authorId),
                         statusNotIn(TERMINATED_STATUSES.toArray(new ReservationStatus[0]))
                 )
-                .fetchFirst();  // LIMIT 1
+                .fetchFirst();
 
         return result != null;
     }
@@ -91,8 +89,8 @@ public class ReservationQueryRepository extends CustomQuerydslRepositorySupport{
     }
 
     public Optional<Reservation> findByIdWithPostAndAuthor(Long id) {
-        QMember guest = new QMember("guest");      // ← 게스트용 별칭
-        QMember host = new QMember("host");        // ← 호스트용 별칭
+        QMember guest = new QMember("guest");
+        QMember host = new QMember("host");
 
         Reservation result = selectFrom(reservation)
                 .leftJoin(reservation.post, post).fetchJoin()
@@ -111,7 +109,6 @@ public class ReservationQueryRepository extends CustomQuerydslRepositorySupport{
             Pageable pageable) {
 
         return applyPagination(pageable,
-                // Function<JPAQueryFactory, JPAQuery<Reservation>> contentQuery
                 queryFactory -> queryFactory
                         .selectFrom(reservation)
                         .leftJoin(reservation.post, post).fetchJoin()
@@ -121,7 +118,6 @@ public class ReservationQueryRepository extends CustomQuerydslRepositorySupport{
                                 statusIn(status),
                                 postTitleContains(keyword)
                         ),
-                // Function<JPAQueryFactory, JPAQuery<Long>> countQuery
                 queryFactory -> queryFactory
                         .select(reservation.count())
                         .from(reservation)
@@ -138,16 +134,13 @@ public class ReservationQueryRepository extends CustomQuerydslRepositorySupport{
             ReservationStatus status,
             Pageable pageable) {
 
-        // contentQuery: 실제 조회할 데이터를 반환하는 쿼리 (페이징/정렬 적용 전)
         return applyPagination(pageable,
-                // Function<JPAQueryFactory, JPAQuery<Reservation>> contentQuery
                 queryFactory -> queryFactory
                         .selectFrom(reservation)
                         .where(
                                 reservation.post.eq(post),
                                 statusEq(status)
                         ),
-                // Function<JPAQueryFactory, JPAQuery<Long>> countQuery
                 queryFactory -> queryFactory
                         .select(reservation.count())
                         .from(reservation)
@@ -189,8 +182,6 @@ public class ReservationQueryRepository extends CustomQuerydslRepositorySupport{
                 .where(reservation.status.eq(status))
                 .fetch();
     }
-
-    // ===== 동적 조건 메서드 (Report 예시 스타일) =====
 
     private BooleanExpression postIdEq(Long postId) {
         return postId != null ? reservation.post.id.eq(postId) : null;

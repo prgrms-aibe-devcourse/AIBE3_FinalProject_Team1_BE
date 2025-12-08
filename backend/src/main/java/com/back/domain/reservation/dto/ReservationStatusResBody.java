@@ -9,7 +9,6 @@ public record ReservationStatusResBody(
         Map<ReservationStatus, Integer> statusCounts,
         Integer totalCount
 ) {
-    // Compact Constructor (유효성 검증)
     public ReservationStatusResBody {
         if (statusCounts == null) {
             statusCounts = new HashMap<>();
@@ -19,7 +18,6 @@ public record ReservationStatusResBody(
         }
     }
 
-    // 편의 메서드
     public Integer getCount(ReservationStatus status) {
         return statusCounts.getOrDefault(status, 0);
     }

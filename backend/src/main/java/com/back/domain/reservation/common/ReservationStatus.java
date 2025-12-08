@@ -31,13 +31,11 @@ public enum ReservationStatus {
     private final boolean isReviewable;
     private final ReservationStatusSubject statusSubject;
 
-    // 정적 Map으로 전환 가능한 상태 관리
     private static final Map<ReservationStatus, Set<ReservationStatus>> ALLOWED_TRANSITIONS;
 
     static {
         Map<ReservationStatus, Set<ReservationStatus>> transitions = new EnumMap<>(ReservationStatus.class);
 
-        // 각 상태별 전환 가능한 상태 정의
         transitions.put(PENDING_APPROVAL, Set.of(PENDING_PAYMENT, REJECTED, CANCELLED));
         transitions.put(PENDING_PAYMENT, Set.of(PENDING_PICKUP, CANCELLED));
         transitions.put(PENDING_PICKUP, Set.of(SHIPPING, INSPECTING_RENTAL, CANCELLED));
@@ -52,7 +50,6 @@ public enum ReservationStatus {
         transitions.put(LOST_OR_UNRETURNED, Set.of(CLAIMING));
         transitions.put(CLAIMING, Set.of(CLAIM_COMPLETED));
 
-        // 종료 상태는 전환 불가
         transitions.put(REFUND_COMPLETED, Set.of());
         transitions.put(CLAIM_COMPLETED, Set.of());
         transitions.put(REJECTED, Set.of());

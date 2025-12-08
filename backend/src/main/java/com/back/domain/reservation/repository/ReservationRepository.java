@@ -9,7 +9,4 @@ import java.util.List;
 
 @Repository
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
-//    Page<Reservation> findByPost(Post post, Pageable pageable);
-//    Page<Reservation> findByPostAndStatus(Post post, ReservationStatus status, Pageable pageable);
-//    List<Reservation> findByStatus(ReservationStatus statuses);
 }
