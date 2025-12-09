@@ -178,10 +178,10 @@ class ReservationControllerTest extends BaseContainerIntegrationTest {
 
         // 1. 수정할 요청 본문(Request Body) 객체 생성
         UpdateReservationReqBody reqBody = new UpdateReservationReqBody(
-                ReservationDeliveryMethod.DIRECT,
-                null,
-                null,
-                ReservationDeliveryMethod.DIRECT,
+                ReservationDeliveryMethod.DELIVERY,
+                "수정 주소1",
+                "수정 주소2",
+                ReservationDeliveryMethod.DELIVERY,
                 Collections.emptyList(),
                 LocalDateTime.now().plusDays(60),
                 LocalDateTime.now().plusDays(61)
@@ -196,7 +196,7 @@ class ReservationControllerTest extends BaseContainerIntegrationTest {
                         jsonPath("$.status").value(is(200)),
                         jsonPath("$.msg").value(is("%d번 예약이 수정되었습니다.".formatted(reservationId))),
                         jsonPath("$.data.id").value(is(reservationId.intValue())),
-                        jsonPath("$.data.receiveMethod").value(is("DIRECT")),
+                        jsonPath("$.data.receiveMethod").value(is("DELIVERY")),
                         jsonPath("$.data.totalAmount").isNumber()
                 );
     }
