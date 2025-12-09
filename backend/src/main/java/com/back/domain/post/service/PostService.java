@@ -421,4 +421,9 @@ public class PostService {
 
 		log.info("Embedding batch finished. 성공: {}, 실패: {}", successCount, failedCount);
 	}
+
+	public Post getByIdWithLock(Long id) {
+		return postRepository.findByIdWithLock(id)
+			.orElseThrow(() -> new ServiceException(HttpStatus.NOT_FOUND, "존재하지 않는 게시글입니다."));
+	}
 }

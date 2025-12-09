@@ -366,10 +366,12 @@ public class ReservationService {
                     reqBody.receiveCarrier(),
                     reqBody.receiveTrackingNumber()
             );
+
             case RETURNING -> reservation.startReturning(
                     reqBody.returnCarrier(),
                     reqBody.returnTrackingNumber()
             );
+
             // 반납 대기
             case PENDING_RETURN -> {
                 // 대여 검수 -> 반납 대기 (검수 실패)
@@ -381,9 +383,28 @@ public class ReservationService {
                 }
             }
 
+            // PENDING_RETURN 상태로 전환 시 중복 예약 체크 (비관적 락)
+            case PENDING_PAYMENT -> {
+                // Post 엔티티를 락을 걸고 조회
+                Post post = postService.getByIdWithLock(reservation.getPost().getId());
+
+                boolean hasConflicts = reservationQueryRepository.existsOverlappingReservation(
+                        reservation.getPost().getId(),
+                        reservation.getReservationStartAt(),
+                        reservation.getReservationEndAt(),
+                        reservation.getId()
+                );
+
+                if (hasConflicts) {
+                    throw new ServiceException(HttpStatus.CONFLICT,
+                            "해당 기간에 이미 승인된 예약이 있습니다.");
+                }
+
+                reservation.changeStatus(reqBody.status());
+            }
+
             // 단순 상태 전환 (명시적으로 나열)
-            case PENDING_PAYMENT,
-                 PENDING_PICKUP,
+            case PENDING_PICKUP,
                  INSPECTING_RENTAL,
                  RENTING,
                  RETURN_COMPLETED,
