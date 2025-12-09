@@ -186,6 +186,7 @@ echo "CUSTOM__JWT__SECRET_KEY=${var.jwt_secret}" >> /etc/environment
 echo "CUSTOM__CORS__ALLOWED__ORIGINS=${var.cors_allowed_origin}" >> /etc/environment
 echo "SPRING__AI__OPENAI__API_KEY=${var.openai_api_key}" >> /etc/environment
 echo "CLOUD__AWS__S3__BUCKET=${var.s3_bucket_name}" >> /etc/environment
+echo "CLOUD__AWS__CLOUDFRONT__DOMAIN=${aws_cloudfront_distribution.this.domain_name}" >> /etc/environment
 echo "SPRING__MAIL__HOST=${var.mail_host}" >> /etc/environment
 echo "SPRING__MAIL__PORT=${var.mail_port}" >> /etc/environment
 echo "SPRING__MAIL__USERNAME=${var.mail_username}" >> /etc/environment
@@ -324,6 +325,7 @@ CUSTOM__JWT__SECRET_KEY=${var.jwt_secret}
 CUSTOM__CORS__ALLOWED__ORIGINS=${var.cors_allowed_origin}
 SPRING__AI__OPENAI__API_KEY=${var.openai_api_key}
 CLOUD__AWS__S3__BUCKET=${var.s3_bucket_name}
+CLOUD__AWS__CLOUDFRONT__DOMAIN=${aws_cloudfront_distribution.this.domain_name}
 SPRING__MAIL__HOST=${var.mail_host}
 SPRING__MAIL__PORT=${var.mail_port}
 SPRING__MAIL__USERNAME=${var.mail_username}
@@ -361,6 +363,7 @@ services:
       - CUSTOM__CORS__ALLOWED__ORIGINS=$${CUSTOM__CORS__ALLOWED__ORIGINS}
       - SPRING__AI__OPENAI__API_KEY=$${SPRING__AI__OPENAI__API_KEY}
       - CLOUD__AWS__S3__BUCKET=$${CLOUD__AWS__S3__BUCKET}
+      - CLOUD__AWS__CLOUDFRONT__DOMAIN=$${CLOUD__AWS__CLOUDFRONT__DOMAIN}
       - SPRING__MAIL__HOST=$${SPRING__MAIL__HOST}
       - SPRING__MAIL__PORT=$${SPRING__MAIL__PORT}
       - SPRING__MAIL__USERNAME=$${SPRING__MAIL__USERNAME}
@@ -398,6 +401,7 @@ services:
       - CUSTOM__CORS__ALLOWED__ORIGINS=$${CUSTOM__CORS__ALLOWED__ORIGINS}
       - SPRING__AI__OPENAI__API_KEY=$${SPRING__AI__OPENAI__API_KEY}
       - CLOUD__AWS__S3__BUCKET=$${CLOUD__AWS__S3__BUCKET}
+      - CLOUD__AWS__CLOUDFRONT__DOMAIN=$${CLOUD__AWS__CLOUDFRONT__DOMAIN}
       - SPRING__MAIL__HOST=$${SPRING__MAIL__HOST}
       - SPRING__MAIL__PORT=$${SPRING__MAIL__PORT}
       - SPRING__MAIL__USERNAME=$${SPRING__MAIL__USERNAME}
@@ -613,6 +617,9 @@ resource "aws_instance" "ec2-team1" {
   user_data = <<-EOF
 ${local.ec2_user_data_base}
 EOF
+
+  # CloudFront를 먼저 생성한 후 EC2 생성 (user_data에서 CloudFront 도메인 사용)
+  depends_on = [aws_cloudfront_distribution.this]
 }
 
 // Elastic IP를 EC2 인스턴스에 연결
