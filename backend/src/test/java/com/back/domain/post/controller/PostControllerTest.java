@@ -86,7 +86,7 @@ class PostControllerTest {
 			.andExpect(jsonPath("$.data.page.page").value(0))
 			.andExpect(jsonPath("$.data.page.size").value(30))
 			.andExpect(jsonPath("$.data.content").isArray())
-			.andExpect(jsonPath("$.data.content.length()").value(6));
+			.andExpect(jsonPath("$.data.content.length()").value(7));
 	}
 
 	@Test
@@ -102,7 +102,7 @@ class PostControllerTest {
 			.andExpect(jsonPath("$.data.page.page").value(0))
 			.andExpect(jsonPath("$.data.page.size").value(30))
 			.andExpect(jsonPath("$.data.content").isArray())
-			.andExpect(jsonPath("$.data.content.length()").value(3));
+			.andExpect(jsonPath("$.data.content.length()").value(4));
 
 	}
 
