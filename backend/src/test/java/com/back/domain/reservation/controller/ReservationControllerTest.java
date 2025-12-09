@@ -11,6 +11,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.security.concurrent.DelegatingSecurityContextRunnable;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.context.jdbc.Sql;
 
@@ -251,7 +253,7 @@ class ReservationControllerTest extends BaseContainerIntegrationTest {
         AtomicInteger status1 = new AtomicInteger();
         AtomicInteger status2 = new AtomicInteger();
 
-        Runnable task1 = () -> {
+        Runnable rawTask1 = () -> {
             try {
                 startLatch.await();
                 var result = mockMvc.perform(
@@ -268,7 +270,7 @@ class ReservationControllerTest extends BaseContainerIntegrationTest {
             }
         };
 
-        Runnable task2 = () -> {
+        Runnable rawTask2 = () -> {
             try {
                 startLatch.await();
                 var result = mockMvc.perform(
@@ -284,6 +286,9 @@ class ReservationControllerTest extends BaseContainerIntegrationTest {
                 doneLatch.countDown();
             }
         };
+
+        Runnable task1 = new DelegatingSecurityContextRunnable(rawTask1, SecurityContextHolder.getContext());
+        Runnable task2 = new DelegatingSecurityContextRunnable(rawTask2, SecurityContextHolder.getContext());
 
         new Thread(task1).start();
         new Thread(task2).start();
