@@ -165,8 +165,26 @@ public class S3Uploader {
 
 			// 프로필 원본만 삭제 (썸네일은 Lambda가 생성한 것이므로 그냥 둠)
 			if (key.startsWith("members/profile/originals/")) {
+				// 1. 원본 이미지 삭제
 				delete(imageUrl);
 				log.info("프로필 원본 이미지 삭제: {}", key);
+
+				// 2. 리사이즈 이미지도 삭제
+				try {
+					String filename = key.substring("members/profile/originals/".length());
+					String nameWithoutExt = filename.substring(0, filename.lastIndexOf('.'));
+					String thumbnailKey = "members/profile/resized/thumbnail/" + nameWithoutExt + ".webp";
+
+					DeleteObjectRequest deleteResizedRequest = DeleteObjectRequest.builder()
+							.bucket(bucket)
+							.key(thumbnailKey)
+							.build();
+
+					s3.deleteObject(deleteResizedRequest);
+					log.info("프로필 리사이즈 이미지 삭제: {}", thumbnailKey);
+				} catch (Exception e) {
+					log.warn("프로필 리사이즈 이미지 삭제 실패 (파일이 없을 수 있음): {}", e.getMessage());
+				}
 			} else {
 				log.warn("프로필 원본 이미지가 아니므로 삭제 안 함: {}", key);
 			}
