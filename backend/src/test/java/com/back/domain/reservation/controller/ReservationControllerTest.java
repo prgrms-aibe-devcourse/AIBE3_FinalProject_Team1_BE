@@ -131,7 +131,7 @@ class ReservationControllerTest extends BaseContainerIntegrationTest {
     @WithUserDetails("user1@example.com") // DB 상의 1번 게시글(postId=1)의 작성자(author_id)의 이메일로 설정
     @DisplayName("호스트가 자신의 게시글에 대한 예약 목록 조회 테스트")
     void getReceivedReservationsTest_Success() throws Exception {
-        Long postId = 1L; // 1번 게시글에 대한 예약 목록 조회
+        Long postId = 2L; // 2번 게시글에 대한 예약 목록 조회
 
         mockMvc.perform(get("/api/v1/reservations/received/{postId}", postId)
                         .param("page", "0")

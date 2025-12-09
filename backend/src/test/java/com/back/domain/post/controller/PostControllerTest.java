@@ -149,7 +149,7 @@ class PostControllerTest {
 	@WithUserDetails("user1@example.com")
 	void deletePost_success() throws Exception {
 
-		mockMvc.perform(delete("/api/v1/posts/{id}", 8L))
+		mockMvc.perform(delete("/api/v1/posts/{id}", 1L))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.msg").value("게시글이 삭제되었습니다."));
 	}
@@ -198,7 +198,7 @@ class PostControllerTest {
 			reqBody.getBytes()
 		);
 
-		mockMvc.perform(multipart("/api/v1/posts/{id}", 8L)
+		mockMvc.perform(multipart("/api/v1/posts/{id}", 1L)
 				.file(json)
 				.with(request -> {
 					request.setMethod("PUT");
