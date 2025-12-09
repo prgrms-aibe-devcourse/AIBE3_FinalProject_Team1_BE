@@ -346,6 +346,8 @@ services:
       - common
     ports:
       - "8080:8080"
+    volumes:
+      - /dockerProjects/team1-app-001/logs:/app/logs
     environment:
       - TZ=Asia/Seoul
       - SPRING_PROFILES_ACTIVE=prod
@@ -381,6 +383,8 @@ services:
       - common
     ports:
       - "8081:8080"
+    volumes:
+      - /dockerProjects/team1-app-002/logs:/app/logs
     environment:
       - TZ=Asia/Seoul
       - SPRING_PROFILES_ACTIVE=prod
@@ -625,4 +629,223 @@ resource "aws_s3_bucket" "app_bucket" {
     Name = "${var.prefix}-s3-bucket"
     Team = var.team_tag_value
   }
+}
+
+# ==================== Lambda 함수 (Node.js) ====================
+resource "aws_lambda_function" "profile_image_resizer" {
+  filename         = "lambda/profile_resizer.zip"
+  function_name    = "${var.prefix}-profile-resizer"
+  role             = aws_iam_role.lambda_profile_resizer.arn
+  handler          = "index.handler"           # Node.js handler
+  runtime          = "nodejs20.x"              # Node.js 20
+  timeout          = 30
+  memory_size      = 512
+  source_code_hash = filebase64sha256("lambda/profile_resizer.zip")
+
+  environment {
+    variables = {
+      BUCKET_NAME        = aws_s3_bucket.app_bucket.id
+      SOURCE_PREFIX      = "members/profile/originals/"
+      DESTINATION_PREFIX = "members/profile/resized/thumbnail/"
+    }
+  }
+
+  tags = {
+    Name = "${var.prefix}-profile-resizer"
+    Team = var.team_tag_value
+  }
+}
+
+# Lambda CloudWatch Logs
+resource "aws_cloudwatch_log_group" "profile_resizer" {
+  name              = "/aws/lambda/${var.prefix}-profile-resizer"
+  retention_in_days = 7
+
+  tags = {
+    Name = "${var.prefix}-profile-resizer-logs"
+    Team = var.team_tag_value
+  }
+}
+
+# Lambda IAM Role
+resource "aws_iam_role" "lambda_profile_resizer" {
+  name = "${var.prefix}-lambda-profile-resizer-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "lambda.amazonaws.com"
+      }
+    }]
+  })
+
+  tags = {
+    Name = "${var.prefix}-lambda-profile-resizer-role"
+    Team = var.team_tag_value
+  }
+}
+
+# Lambda 정책 - 특정 경로만 접근 (보안 강화)
+resource "aws_iam_role_policy" "lambda_profile_resizer_policy" {
+  name = "${var.prefix}-lambda-profile-resizer-policy"
+  role = aws_iam_role.lambda_profile_resizer.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "S3ReadOriginals"
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject"
+        ]
+        # 특정 버킷의 originals 폴더만 읽기
+        Resource = "${aws_s3_bucket.app_bucket.arn}/members/profile/originals/*"
+      },
+      {
+        Sid    = "S3WriteThumbnails"
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject"
+        ]
+        # 특정 버킷의 resized 폴더만 쓰기
+        Resource = "${aws_s3_bucket.app_bucket.arn}/members/profile/resized/*"
+      },
+      {
+        Sid    = "CloudWatchLogs"
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        # 자기 Lambda 로그만 접근
+        Resource = "arn:aws:logs:${var.region}:*:log-group:/aws/lambda/${var.prefix}-profile-resizer*"
+      }
+    ]
+  })
+}
+
+# ==================== 현재 계정 정보 ====================
+data "aws_caller_identity" "current" {}
+
+# ==================== S3 트리거 ====================
+resource "aws_lambda_permission" "allow_s3_profile" {
+  statement_id   = "AllowS3InvokeProfile"
+  action         = "lambda:InvokeFunction"
+  function_name  = aws_lambda_function.profile_image_resizer.function_name
+  principal      = "s3.amazonaws.com"
+  source_arn     = aws_s3_bucket.app_bucket.arn
+  source_account = data.aws_caller_identity.current.account_id
+}
+
+resource "aws_s3_bucket_notification" "profile_upload" {
+  bucket = aws_s3_bucket.app_bucket.id
+
+  lambda_function {
+    lambda_function_arn = aws_lambda_function.profile_image_resizer.arn
+    events              = ["s3:ObjectCreated:*"]
+    filter_prefix       = "members/profile/originals/"
+  }
+
+  depends_on = [aws_lambda_permission.allow_s3_profile]
+}
+
+# ==================== CloudFront ====================
+resource "aws_cloudfront_origin_access_identity" "this" {
+  comment = "OAI for ${var.prefix}"
+}
+
+resource "aws_cloudfront_distribution" "this" {
+  enabled         = true
+  is_ipv6_enabled = true
+  comment         = "${var.prefix} CDN"
+  price_class     = "PriceClass_200" # 북미, 유럽, 아시아
+
+  origin {
+    domain_name = aws_s3_bucket.app_bucket.bucket_regional_domain_name
+    origin_id   = "S3-${aws_s3_bucket.app_bucket.id}"
+
+    s3_origin_config {
+      origin_access_identity = aws_cloudfront_origin_access_identity.this.cloudfront_access_identity_path
+    }
+  }
+
+  default_cache_behavior {
+    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
+    cached_methods         = ["GET", "HEAD"]
+    target_origin_id       = "S3-${aws_s3_bucket.app_bucket.id}"
+    viewer_protocol_policy = "redirect-to-https"
+    compress               = true
+
+    min_ttl     = 0
+    default_ttl = 86400    # 1일
+    max_ttl     = 31536000 # 1년
+
+    forwarded_values {
+      query_string = false
+      cookies {
+        forward = "none"
+      }
+    }
+  }
+
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+
+  viewer_certificate {
+    cloudfront_default_certificate = true
+  }
+
+  tags = {
+    Name = "${var.prefix}-cloudfront"
+    Team = var.team_tag_value
+  }
+}
+
+# S3 버킷 정책 - CloudFront 접근 허용
+resource "aws_s3_bucket_policy" "cloudfront_access" {
+  bucket = aws_s3_bucket.app_bucket.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowCloudFrontOAI"
+        Effect = "Allow"
+        Principal = {
+          AWS = aws_cloudfront_origin_access_identity.this.iam_arn
+        }
+        Action   = "s3:GetObject"
+        Resource = "${aws_s3_bucket.app_bucket.arn}/*"
+      }
+    ]
+  })
+}
+
+# ==================== Outputs ====================
+output "cloudfront_domain" {
+  value       = aws_cloudfront_distribution.this.domain_name
+  description = "CloudFront domain name"
+}
+
+output "s3_bucket_name" {
+  value       = aws_s3_bucket.app_bucket.id
+  description = "S3 bucket name"
+}
+
+output "lambda_function_name" {
+  value       = aws_lambda_function.profile_image_resizer.function_name
+  description = "Lambda function name"
+}
+
+output "public_ip" {
+  value       = aws_eip.eip-team1.public_ip
+  description = "EC2 Public IP"
 }

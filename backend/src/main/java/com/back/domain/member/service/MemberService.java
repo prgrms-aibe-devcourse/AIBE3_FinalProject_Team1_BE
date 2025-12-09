@@ -36,11 +36,11 @@ public class MemberService {
     }
 
     public MemberDto toMemberDto(Member member) {
-        String presignedUrl = s3.generatePresignedUrl(member.getProfileImgUrl());
+        String presignedUrl = s3.getProfileThumbnailUrl(member.getProfileImgUrl());
         return new MemberDto(member, presignedUrl);
     }
     public SimpleMemberDto toSimpleMemberDto(Member member) {
-        String presignedUrl = s3.generatePresignedUrl(member.getProfileImgUrl());
+        String presignedUrl = s3.getProfileThumbnailUrl(member.getProfileImgUrl());
         return new SimpleMemberDto(member, presignedUrl);
     }
 
@@ -85,16 +85,16 @@ public class MemberService {
         if (profileImage != null && !profileImage.isEmpty()) {
             // 기존 이미지가 DB에 기록되어 있다면 S3에서 파일 삭제
             if (member.getProfileImgUrl() != null) {
-                s3.delete(member.getProfileImgUrl());
+                s3.deleteProfileSafely(member.getProfileImgUrl());
             }
-            String profileImgUrl = s3.upload(profileImage);
-            member.updateProfileImage(profileImgUrl);
+            String originalUrl = s3.uploadProfileOriginal(profileImage);
+            member.updateProfileImage(originalUrl);
         }
         // removeProfileImage가 true 면 프로필 이미지 삭제
         else if (reqBody.removeProfileImage()) {
             // 기존 이미지가 DB에 기록되어 있다면 S3에서 파일 삭제
             if (member.getProfileImgUrl() != null) {
-                s3.delete(member.getProfileImgUrl());
+                s3.deleteProfileSafely(member.getProfileImgUrl());
             }
             member.updateProfileImage(null);
         }

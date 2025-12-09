@@ -114,6 +114,8 @@ cloud:
   aws:
     s3:
       bucket: ${CLOUD__AWS__S3__BUCKET}
+    cloudfront:
+      domain: ${CLOUD__AWS__CLOUDFRONT__DOMAIN}
 
 management:
   endpoints:

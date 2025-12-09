@@ -73,7 +73,7 @@ class MemberControllerTest {
 
     @BeforeEach
     void setup() {
-        when(s3Uploader.upload(any(MultipartFile.class)))
+        when(s3Uploader.uploadProfileOriginal(any(MultipartFile.class)))
                 .thenReturn("https://bucket.s3.ap-northeast-2.amazonaws.com/post/test.jpg");
         when(s3Uploader.generatePresignedUrl(anyString()))
                 .thenReturn("https://s3.example.com/test.jpg");
@@ -496,7 +496,7 @@ class MemberControllerTest {
                 "test image content".getBytes()
         );
 
-        when(s3Uploader.upload(any(MultipartFile.class)))
+        when(s3Uploader.uploadProfileOriginal(any(MultipartFile.class)))
                 .thenReturn("https://bucket.s3.ap-northeast-2.amazonaws.com/post/test.jpg");
 
         // when & then
@@ -518,7 +518,7 @@ class MemberControllerTest {
                 .andExpect(jsonPath("$.status").value(200))
                 .andExpect(jsonPath("$.msg").value("회원 정보가 수정되었습니다."));
 
-        verify(s3Uploader).upload(any(MultipartFile.class));
+        verify(s3Uploader).uploadProfileOriginal(any(MultipartFile.class));
     }
 
     @Test

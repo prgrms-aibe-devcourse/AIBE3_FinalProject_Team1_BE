@@ -1,0 +1,16 @@
+{
+  "name": "profile-image-resizer",
+  "version": "1.0.0",
+  "description": "Lambda function for resizing profile images",
+  "main": "index.js",
+  "scripts": {
+    "build": "node create-zip.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.947.0",
+    "sharp": "^0.33.5"
+  },
+  "devDependencies": {
+    "archiver": "^7.0.1"
+  }
+}
