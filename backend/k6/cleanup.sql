@@ -1,0 +1,16 @@
+USE chwimeet;
+
+SET FOREIGN_KEY_CHECKS = 0;
+
+TRUNCATE TABLE chat_message;
+TRUNCATE TABLE chat_member;
+TRUNCATE TABLE chat_room;
+TRUNCATE TABLE reservation;
+TRUNCATE TABLE post;
+TRUNCATE TABLE post_image;
+TRUNCATE TABLE post_region;
+TRUNCATE TABLE category;
+TRUNCATE TABLE region;
+TRUNCATE TABLE member;
+
+SET FOREIGN_KEY_CHECKS = 1;
