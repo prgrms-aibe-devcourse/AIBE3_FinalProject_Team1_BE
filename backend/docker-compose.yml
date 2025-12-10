@@ -43,6 +43,10 @@ services:
   prometheus:
     image: prom/prometheus
     container_name: chwimeet-prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-remote-write-receiver
+      - --enable-feature=native-histograms
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
@@ -64,6 +68,21 @@ services:
     networks:
       - chwimeet-network
     restart: always
+    depends_on:
+      - prometheus
+
+  k6:
+    image: grafana/k6:latest
+    container_name: chwimeet-k6
+    volumes:
+      - ./k6:/scripts
+    environment:
+      - K6_PROMETHEUS_RW_SERVER_URL=http://chwimeet-prometheus:9090/api/v1/write
+      - K6_PROMETHEUS_RW_TREND_AS_NATIVE_HISTOGRAM=true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - chwimeet-network
     depends_on:
       - prometheus
 
