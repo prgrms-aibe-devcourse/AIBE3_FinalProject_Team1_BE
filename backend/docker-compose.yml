@@ -43,6 +43,10 @@ services:
   prometheus:
     image: prom/prometheus
     container_name: chwimeet-prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-remote-write-receiver
+      - --enable-feature=native-histograms
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
