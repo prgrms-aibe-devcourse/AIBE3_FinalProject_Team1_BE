@@ -50,7 +50,7 @@
 # 🧩 아키텍쳐
 - 아키텍처 이미지
 
-설명에 Grafana, nginx proxy manager 활용 blue/green 무중단 배포 등 설명이 들어가면 좋을 것 같음.
+설명에 Grafana, nginx proxy manager 활용 blue/green 무중단 배포, AWS Lambda 활용 이미지 리사이징 처리 등 설명이 들어가면 좋을 것 같음.
 
 <br>
 
