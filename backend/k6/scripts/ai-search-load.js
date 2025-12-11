@@ -15,7 +15,7 @@ export const options = {
         {duration: "30s", target: 0},
     ],
     thresholds: {
-        http_req_duration: ["p(95)<5000", "p(99)<10000"],  // AI 검색은 느릴 수 있으니 넉넉히
+        http_req_duration: ["p(95)<5000", "p(99)<10000"], 
         http_req_failed: ["rate<0.1"],
         errors: ["rate<0.1"],
         ai_search_duration: ["p(95)<5000"],
