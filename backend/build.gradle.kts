@@ -44,12 +44,15 @@ dependencies {
     implementation("org.springframework.ai:spring-ai-rag")
     implementation("org.springframework.ai:spring-ai-starter-vector-store-mariadb")
     implementation("org.springframework.ai:spring-ai-starter-mcp-server-webmvc")
+    implementation("org.springframework.boot:spring-boot-starter-cache")
     compileOnly("org.projectlombok:lombok")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     annotationProcessor("org.projectlombok:lombok")
     implementation("org.mariadb.jdbc:mariadb-java-client:3.5.1")
 
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+
+    implementation("org.redisson:redisson-spring-boot-starter:3.41.0")
 
     // JOOQ
     implementation("org.jooq:jooq:${jooqVersion}")

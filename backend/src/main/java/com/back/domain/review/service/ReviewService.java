@@ -3,6 +3,7 @@ package com.back.domain.review.service;
 import com.back.domain.member.entity.Member;
 import com.back.domain.notification.common.NotificationType;
 import com.back.domain.notification.service.NotificationService;
+import com.back.domain.post.entity.Post;
 import com.back.domain.reservation.entity.Reservation;
 import com.back.domain.reservation.repository.ReservationRepository;
 import com.back.domain.review.dto.ReviewBannedResBody;
@@ -15,6 +16,8 @@ import com.back.domain.review.repository.ReviewQueryRepository;
 import com.back.domain.review.repository.ReviewRepository;
 import com.back.global.exception.ServiceException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -24,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class ReviewService {
+    private final CacheManager cacheManager;
     private final ReviewRepository reviewRepository;
     private final ReviewQueryRepository reviewQueryRepository;
     private final ReviewJooqRepository reviewJooqRepository;
@@ -48,11 +52,23 @@ public class ReviewService {
 
         Review review = reviewRepository.save(Review.create(reservation, reqBody));
 
-        notificationService.saveAndSendNotification(reservation.getPost().getAuthor().getId(), NotificationType.REVIEW_CREATED, review.getId());
+        Post post = reservation.getPost();
+        Member member = post.getAuthor();
+        evictCache(post.getId(), member.getId());
+
+        notificationService.saveAndSendNotification(member.getId(), NotificationType.REVIEW_CREATED, review.getId());
+
         Member author = reservation.getAuthor();
         return new ReviewDto(review, author);
     }
 
+    private void evictCache(Long postId, Long memberId) {
+        Cache postCache = cacheManager.getCache("postReviewSummary");
+        Cache memberCache = cacheManager.getCache("memberReviewSummary");
+
+        if (postCache != null) postCache.evict(postId);
+        if (memberCache != null) memberCache.evict(memberId);
+    }
 
     public Page<ReviewDto> getPostReviews(Pageable pageable, Long postId){
         return reviewQueryRepository.findPostReceivedReviews(pageable, postId);
