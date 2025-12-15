@@ -327,7 +327,7 @@ public void publish(Long chatRoomId, ChatMessageDto dto) {
 
   ## 해결 방법
   **캐시 스탬피드 현상**을 해결할 수 있는 방법에는 여러가지가 있었는데, 캐시 갱신 동시 호출을 방지하는 것이 가장 확실하다고 생각해 `Redisson`을 활용한 분산락을 적용하였습니다.
-  분산락을 적용한 코드는 [여기]()서 확인할 수 있으며, 간략하게 수도 코드로 표현하면 다음과 같습니다.
+  분산락을 적용한 코드는 [여기](https://github.com/prgrms-aibe-devcourse/AIBE3_FinalProject_Team1_BE/blob/main/backend/src/main/java/com/back/domain/review/service/ReviewSummaryService.java#L37)서 확인할 수 있으며, 간략하게 수도 코드로 표현하면 다음과 같습니다.
 
   ```java
   1. 캐시 확인
