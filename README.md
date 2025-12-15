@@ -347,6 +347,7 @@ return answerClient.prompt(prompt).call().content();
 ```
 
 Re-Rank를 통과한 게시글만으로 GPT-5.1을 이용해 최종 응답을 생성합니다.
+</details>
 
 <br>
 
