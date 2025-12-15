@@ -349,6 +349,88 @@ return answerClient.prompt(prompt).call().content();
 Re-Rank를 통과한 게시글만으로 GPT-5.1을 이용해 최종 응답을 생성합니다.
 </details>
 
+<details>
+<summary><strong>📸 AWS Lambda + CloudFront 기반 이미지 리사이징 & 캐싱</strong></summary>
+
+## 도입 배경
+
+게시글 이미지(목록, 상세, 썸네일)와 멤버 프로필 이미지(채팅, 게시글 작성자 정보 등)가 자주 노출되면서 다음과 같은 문제가 발생했습니다.
+
+**초기 방식 (원본 이미지 그대로 제공)**
+- 고용량으로 인한 응답 지연
+- 동일 이미지의 반복 요청으로 인한 트래픽 증가
+
+**개선 시도 (Thumbnailator로 서버 리사이징)**
+- 용량은 줄었으나, 서버에서 리사이징을 처리해 업로드하는 구조
+- 사진 5장 정도만 되어도 리사이징 작업으로 응답 속도가 급격히 저하
+
+이에 따라 **이미지 처리 책임을 서버 외부로 완전히 분리하면서도, 반복 요청 성능을 보장하는 구조**가 필요했습니다.
+
+## 해결 방식 -> 이미지 업로드시 AWS Lambda로 리사이징 및 CloudFront 캐싱
+
+### 이미지 처리 흐름
+
+1. 사용자가 이미지를 업로드하면 원본 이미지를 S3에 저장하고, **CloudFront URL을 데이터베이스에 저장**합니다.
+2. S3 업로드 이벤트를 트리거로 AWS Lambda가 실행됩니다.
+3. Lambda에서 이미지 유형에 따라 리사이징을 수행합니다.
+   - **프로필 이미지**: 원본 + 썸네일
+   - **게시글 이미지**: 원본 + 썸네일(목록용) + 상세보기 이미지
+4. 리사이징된 이미지들을 각각 S3에 저장합니다.
+5. 클라이언트는 CloudFront를 통해 용도에 맞는 이미지를 캐싱된 상태로 전달받습니다.
+
+### AWS Lambda 리사이징 
+
+```javascript
+const SIZES = {
+    thumbnail: { width: 800, height: 600 },
+    detail: { width: 1920, height: 1440 }
+};
+
+// 각 크기별 리사이징
+for (const [sizeName, dimensions] of Object.entries(SIZES)) {
+    const resizedImage = await sharp(imageBuffer)
+        .resize(dimensions.width, dimensions.height, {
+            fit: 'cover',
+            position: 'centre'
+        })
+        .webp({ quality: 85, effort: 6 })
+        .toBuffer();
+    
+    const destinationKey = `posts/images/resized/${sizeName}/${nameWithoutExt}.webp`;
+    
+    // S3에 업로드
+    await s3.send(new PutObjectCommand({
+        Bucket: bucket,
+        Key: destinationKey,
+        Body: resizedImage,
+        ContentType: "image/webp", //webp로 설정해 용량 경량화
+        CacheControl: "max-age=31536000"  // 1년 캐싱
+    }));
+}
+```
+
+### s3 디렉토리 분기
+
+```java
+// 원본: posts/images/originals/uuid.jpg
+// 리사이즈: posts/images/resized/{sizeType}/uuid.webp
+String resizedKey = "posts/images/resized/" + sizeType + "/" + nameWithoutExt + ".webp";
+return "https://" + cloudfrontDomain + "/" + resizedKey;
+```
+원본 업로드 시 Lambda가 자동으로 각 용도별 이미지를 생성하고, 백엔드에서는 단순히 경로 문자열만 조합하여 반환하는 **책임 분리** 구조로 설계했습니다.
+
+
+## 적용 효과
+
+이미지 리사이징을 AWS Lambda에서 처리하도록 구조를 변경하여, 메인 서버는 단순 업로드/저장 처리만 수행하도록 했습니다. 덕분에 게시글 이미지, 채팅, 멤버 프로필 등 반복 요청이 많은 화면에서도 CloudFront 캐싱과 결합해 빠른 이미지 로딩과 안정적인 응답을 제공할 수 있었습니다.
+
+> - 응답 속도 개선: 5장 기준 이미지 업로드 시 기존 1~2초에서 약 600ms로 단축
+> - 트래픽 효율성 강화: 리사이징된 이미지를 캐싱하여 사용자 트래픽 감소
+> - 유지보수성과 확장성 확보: 이미지 유형에 관계없이 공통 파이프라인으로 처리
+
+</details>
+
+
 <br>
 
 # 🔥 트러블 슈팅
