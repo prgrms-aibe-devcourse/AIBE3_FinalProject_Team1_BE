@@ -50,8 +50,9 @@
 
 # 🧩 아키텍쳐
 - 아키텍처 이미지
+<div align="center">
 <img width="720" height="347" alt="image" src="https://github.com/user-attachments/assets/fa9ea756-b7c3-4f40-b0f0-812108882554" />
-
+</div>
 
 - 주요 아키텍처 특징
   - 실시간 모니터링: Grafana 대시보드를 통한 실시간 시스템 메트릭 모니터링 및 알림
