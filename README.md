@@ -202,6 +202,12 @@
 
 - 아이콘이나 이미지로 기술 스택 나열 후 특별히 선택한 이유가 명확하고 눈에 뛸만한 기술 스택에 대해 선택한 이유 적기
 
+<img src="https://img.shields.io/badge/Spring_Boot-6DB33F?style=flat&logo=Spring-Boot&logoColor=white" />
+<img src="https://img.shields.io/badge/Spring_Boot-6DB33F?style=flat-square&logo=Spring-Boot&logoColor=white" />
+<img src="https://img.shields.io/badge/Spring_Boot-6DB33F?style=plastic&logo=Spring-Boot&logoColor=white" />
+<img src="https://img.shields.io/badge/Spring_Boot-6DB33F?style=for-the-badge&logo=Spring-Boot&logoColor=white" />
+<img src="https://img.shields.io/badge/Spring_Boot-6DB33F?style=social&logo=Spring-Boot&logoColor=white" />
+
 <img src="https://img.shields.io/badge/Mariadb-003545?style=for-the-badge&logo=mariadb&logoColor=white" />
 
 프로젝트 초기에는 익숙한 관계형 데이터베이스인 MySQL을 사용했지만,
