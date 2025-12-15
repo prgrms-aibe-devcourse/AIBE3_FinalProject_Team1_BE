@@ -1,7 +1,8 @@
 # <img width="50" height="40" src="https://github.com/user-attachments/assets/591a9945-2dc0-46a7-93af-de31a893fa2b" /> CHWIMEET
 
 <div align="center">
-<img width="500" height="440" alt="취밋로고" src="https://github.com/user-attachments/assets/e9b2a843-b5a8-44ec-adbf-03d8adf6a775" />
+<img width="880" height="256" alt="chwimeet_logo" src="https://github.com/user-attachments/assets/11bb31bb-d212-4e91-af4a-29acc90e4265" />
+
 
   <p> <strong>취밋</strong>은 일상에서 잠깐 필요한 물건을<br />
     가까운 사람들과 쉽게 빌리고 빌려줄 수 있는 P2P 대여 플랫폼입니다.<br /> 
@@ -97,6 +98,9 @@ Spring AI는 다양한 AI 모델과 벡터 DB를 추상화된 인터페이스로
 ...STOMP Pub/Sub 설명...
 
 또한 레디스를 캐시 저장소로 사용하였는데, 이는 이미 STOMP Pub/Sub 구조에서 레디스가 구축된 상황에서 도입 비용과 운영 복잡도를 줄이기 위함이었습니다. 그리고 레디스를 단순 캐시 용도가 아니라, **Redisson을 활용한 분산락**을 적용함으로써 다중 인스턴스에서 발생할 수 있는 **캐시 스탬피드 현상**을 제어할 수 있었습니다. 즉, 캐싱을 통한 성능 개선과 분산락을 통한 최적화 및 데이터 정합성 확보를 동시에 만족하기 위해 레디스를 선택하였습니다.
+
+<img src="https://img.shields.io/badge/Quartz-3E4348?style=for-the-badge&logoColor=white" />
+
 
 <br>
 
