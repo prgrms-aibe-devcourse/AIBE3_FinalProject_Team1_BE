@@ -285,8 +285,7 @@
   <img src="https://img.shields.io/badge/Tailwind CSS-06B6D4?style=flat&logo=tailwindcss&logoColor=white">
   <img src="https://img.shields.io/badge/Shadcn-000000?style=flat&logo=shadcnui&logoColor=white" />
   <img src="https://img.shields.io/badge/Radix UI-161618?style=flat&logo=radixui&logoColor=white">
-  <img src="https://img.shields.io/badge/Zustand-2A3FFB?style=flat&logoColor=white">
-  <img src="https://img.shields.io/badge/Vercel-000000?style=flat&logo=vercel&logoColor=white">
+  <img src="https://img.shields.io/badge/Zustand-2A3FFB?style=flat&logoColor=white">  
   <img src="https://img.shields.io/badge/ESLint-4B32C3?style=flat&logo=eslint&logoColor=white">
   <img src="https://img.shields.io/badge/Prettier-F7B93E?style=flat&logo=prettier&logoColor=white">
 </div>
@@ -335,6 +334,24 @@
   <img src="https://img.shields.io/badge/AWS Lambda-F38020?style=flat&logoColor=white" />
   <img src="https://img.shields.io/badge/AWS S3-D8352A?style=flat&logoColor=white" />
   <img src="https://img.shields.io/badge/AWS Cloudfront-D8352A?style=flat&logoColor=white" />
+  <img src="https://img.shields.io/badge/Vercel-000000?style=flat&logo=vercel&logoColor=white">
+</div>
+
+## Communication
+
+<div>
+  <img src="https://img.shields.io/badge/Notion-000000?style=flat&logo=Notion&logoColor=white" />
+  <img src="https://img.shields.io/badge/GitHub-181717?style=flat&logo=GitHub&logoColor=white" />
+  <img src="https://img.shields.io/badge/Slack-4A154B?style=flat&logo=Slack&logoColor=white" />
+</div>
+
+## ETC
+
+<div>
+  <img src="https://img.shields.io/badge/Toss Payments-0854C1?style=flat&logoColor=white" />
+  <img src="https://img.shields.io/badge/Kakao API-FFCD00?style=flat&logo=kakao&logoColor=white" />
+  <img src="https://img.shields.io/badge/OpenAI API-6BA539?style=flat&logoColor=white" />
+  <img src="https://img.shields.io/badge/Google SMTP-FF7143?style=flat&logoColor=white" />
 </div>
 
 <br>
