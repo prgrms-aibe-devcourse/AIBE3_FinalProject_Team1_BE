@@ -244,6 +244,8 @@
 <details>
 <summary>🚨 신고</summary>
 
+### 신고 기능
+
 ![신고 등록](images/신고/신고등록.gif)
 
 - 게시글, 댓글, 후기 신고 가능
