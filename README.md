@@ -65,7 +65,7 @@
 
 <br>
 
-# 🧩 아키텍쳐
+# 🧩 아키텍처
 <div align="center">
 <img width="720" height="347" alt="image" src="https://github.com/user-attachments/assets/fa9ea756-b7c3-4f40-b0f0-812108882554" />
 </div>
@@ -210,6 +210,8 @@
 <details>
 <summary>💬 채팅</summary>
 
+### 채팅 기능
+
 <div align="center">
   <img 
     src="images/%EC%B1%84%ED%8C%85/%EC%B1%84%ED%8C%85.gif"
@@ -242,8 +244,11 @@
 <details>
 <summary>🚨 신고</summary>
 
+### 신고 기능
+
+![신고 등록](images/신고/신고등록.gif)
+
 - 게시글, 댓글, 후기 신고 가능
-- 관리자가 확인 후 처리
 - 알림과 연동되어 신고 처리 결과 확인 가능
 
 </details>
